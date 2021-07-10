@@ -12,6 +12,7 @@ docs/
 .gitlab/
 .vscode/
 src/
+config/
 
 # files
 .solcover.js
