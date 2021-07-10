@@ -6,8 +6,8 @@
   "license": "ISC",
   "dependencies": {
     "@seedyfiuba/api_components": "^1.0.3",
-    "@seedyfiuba/db_components": "^1.0.1",
-    "@seedyfiuba/error_components": "^1.2.2",
+    "@seedyfiuba/db_components": "^1.1.1",
+    "@seedyfiuba/error_components": "^1.2.6",
     "@seedyfiuba/logging_components": "^1.0.2",
     "config": "^3.3.6",
     "dependable": "^1.1.0",

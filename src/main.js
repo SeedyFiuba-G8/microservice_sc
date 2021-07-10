@@ -1,4 +1,4 @@
-const containerFactory = require("./containerFactory");
+const containerFactory = require('./containerFactory');
 
 function main() {
   containerFactory.createContainer().resolve(function start(app, config, logger) {
@@ -6,7 +6,8 @@ function main() {
 
     app.listen(port, host, () => {
       logger.info(`Listening on ${host}:${port}...`);
-      console.log("CONFIG: ", config);
+      logger.info(`Using network ${config.network}`);
+      if (config.network === 'localhost') logger.warn(`You should have already run 'npx hardhat node'`);
     });
   });
 }

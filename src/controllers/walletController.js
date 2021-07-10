@@ -1,3 +1,5 @@
+const { v4: uuidv4 } = require('uuid'); // TMP
+
 module.exports = function $walletController(expressify, walletService) {
   return expressify({
     create,
@@ -11,7 +13,8 @@ module.exports = function $walletController(expressify, walletService) {
    * @returns {Promise}
    */
   async function create(req, res) {
-    const walletInfo = await walletService.createWallet();
+    // const userId =
+    const walletInfo = await walletService.createWallet(uuidv4());
     return res.status(201).json(walletInfo);
   }
 

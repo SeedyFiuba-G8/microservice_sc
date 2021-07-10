@@ -1,7 +1,6 @@
 const ethers = require('ethers');
-const accounts = [];
 
-module.exports = function $walletService(config) {
+module.exports = function $walletService(config, walletRepository) {
   return {
     createWallet,
     getDeployerWallet,
@@ -14,28 +13,36 @@ module.exports = function $walletService(config) {
     return ethers.Wallet.fromMnemonic(config.deployerMnemonic).connect(config.provider);
   }
 
-  async function createWallet() {
+  async function createWallet(walletId) {
     // This may break in some environments, keep an eye on it
     const wallet = ethers.Wallet.createRandom().connect(config.provider);
-    const newAccount = {
-      id: accounts.length,
+    const newWalletData = {
+      walletId: walletId,
       address: wallet.address,
       privateKey: wallet.privateKey
     };
 
-    accounts.push(newAccount);
-    return newAccount;
+    await walletRepository.create(newWalletData);
+    return newWalletData;
   }
 
-  function getWalletsData() {
-    return accounts;
+  async function getWalletsData() {
+    const wallets = await walletRepository.get();
+    return wallets;
   }
 
-  function getWalletData(index) {
-    return accounts[index];
+  async function getWalletData(walletId) {
+    const walletData = await walletRepository.get({
+      filters: {
+        walletId
+      }
+    });
+    if (!walletData.length) throw errors.create(404, 'No wallet found with specified id.');
+    return walletData[0];
   }
 
-  function getWallet(index) {
-    return new ethers.Wallet(accounts[index - 1].privateKey, config.provider);
+  async function getWallet(walletId) {
+    const walletData = getWalletData(walletId);
+    return new ethers.Wallet(walletData.privateKey, config.provider);
   }
 };

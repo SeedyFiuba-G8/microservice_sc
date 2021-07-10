@@ -95,6 +95,8 @@ paths:
           $ref: '#/components/responses/postWallet'
         400:
           $ref: '#/components/responses/400'
+        409:
+          $ref: '#/components/responses/409'
         415:
           $ref: '#/components/responses/415'
         500:
@@ -102,17 +104,17 @@ paths:
 
   /wallets/{walletId}:
     get:
-      summary: Get a wallet by id.
-      description: Allows a user to retrieve a wallet's information by its id.
+      summary: Get a wallet by its owner's id.
+      description: Allows a user to retrieve a wallet's information by its owner's id.
       tags:
         - Wallets
       parameters:
         - in: path
           name: walletId
           schema:
-            $ref: '#/components/schemas/Id'
+            $ref: '#/components/schemas/WalletId'
           required: true
-          description: id of the wallet to retrieve
+          description: id of the user whose wallet we want to retrieve
       responses:
         200:
           $ref: '#/components/responses/getWallet'
@@ -297,9 +299,11 @@ components:
     Id:
       type: integer
       example: 12
-      # type: string
-      # format: uuid
-      # example: '123e4567-e89b-12d3-a456-426614174000'
+
+    WalletId:
+      type: string
+      format: uuid
+      example: '123e4567-e89b-12d3-a456-426614174000'
 
     Address:
       type: string
@@ -343,9 +347,9 @@ components:
       type: object
       properties:
         ownerId:
-          $ref: '#/components/schemas/Id'
+          $ref: '#/components/schemas/WalletId'
         reviewerId:
-          $ref: '#/components/schemas/Id'
+          $ref: '#/components/schemas/WalletId'
         stagesCost:
           $ref: '#/components/schemas/StagesCost'
       required:
@@ -359,13 +363,13 @@ components:
       properties:
         address:
           $ref: '#/components/schemas/Address'
-        id:
-          $ref: '#/components/schemas/Id'
+        walletId:
+          $ref: '#/components/schemas/WalletId'
         privateKey:
           $ref: '#/components/schemas/Key'
       required:
         - address
-        - id
+        - walletId
         - privateKey
 
     Wallets:
