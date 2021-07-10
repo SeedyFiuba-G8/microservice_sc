@@ -1,2 +1,1 @@
-# template
-Template
+# Smart Contract microservice
