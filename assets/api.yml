@@ -1,0 +1,431 @@
+openapi: '3.0.0'
+
+# =============================================================================
+
+info:
+  title: 'Smart Contract Microservice'
+  description: >
+    Part of the **Seedy FIUBA Project** ([view it on GitHub](https://github.com/orgs/SeedyFiuba-G8/)).
+  version: '1.0.0'
+
+# =============================================================================
+
+servers:
+  - url: https://sf-tdp2-sc.herokuapp.com/
+    description: 'Production'
+  - url: https://sf-tdp2-sc-dev.herokuapp.com/
+    description: 'Staging'
+  - url: http://localhost:3000/
+    description: 'Local development'
+
+# =============================================================================
+
+tags:
+  - name: Projects
+  - name: Wallets
+
+# =============================================================================
+
+paths:
+  # PROJECTS
+  /projects:
+    post:
+      summary: Create a new project
+      description: Allows an entrepeneur user to create a new project.
+      tags:
+        - Projects
+      requestBody:
+        $ref: '#/components/requestBodies/postProject'
+      responses:
+        200:
+          $ref: '#/components/responses/postProject'
+        400:
+          $ref: '#/components/responses/400'
+        415:
+          $ref: '#/components/responses/415'
+        500:
+          $ref: '#/components/responses/500'
+
+  /projects/{projectId}:
+    get:
+      summary: Get a project by id.
+      description: Allows a user to retrieve a project's information by its id.
+      tags:
+        - Projects
+      parameters:
+        - in: path
+          name: projectId
+          schema:
+            $ref: '#/components/schemas/Id'
+          required: true
+          description: id of the project to retrieve
+      responses:
+        200:
+          $ref: '#/components/responses/getProject'
+        404:
+          $ref: '#/components/responses/404'
+        415:
+          $ref: '#/components/responses/415'
+        500:
+          $ref: '#/components/responses/500'
+
+  # WALLETS
+  /wallets:
+    get:
+      summary: Get all registered wallets
+      description: Allows a user to get all registered wallets
+      tags:
+        - Wallets
+      responses:
+        200:
+          $ref: '#/components/responses/getAllWallets'
+        400:
+          $ref: '#/components/responses/400'
+        415:
+          $ref: '#/components/responses/415'
+        500:
+          $ref: '#/components/responses/500'
+    post:
+      summary: Create a new wallet
+      description: Allows a user to create a new wallet.
+      tags:
+        - Wallets
+      responses:
+        201:
+          $ref: '#/components/responses/postWallet'
+        400:
+          $ref: '#/components/responses/400'
+        415:
+          $ref: '#/components/responses/415'
+        500:
+          $ref: '#/components/responses/500'
+
+  /wallets/{walletId}:
+    get:
+      summary: Get a wallet by id.
+      description: Allows a user to retrieve a wallet's information by its id.
+      tags:
+        - Wallets
+      parameters:
+        - in: path
+          name: walletId
+          schema:
+            $ref: '#/components/schemas/Id'
+          required: true
+          description: id of the wallet to retrieve
+      responses:
+        200:
+          $ref: '#/components/responses/getWallet'
+        404:
+          $ref: '#/components/responses/404'
+        415:
+          $ref: '#/components/responses/415'
+        500:
+          $ref: '#/components/responses/500'
+
+  # STATUS
+  /health:
+    get:
+      tags:
+        - Status
+      responses:
+        200:
+          $ref: '#/components/responses/health'
+        400:
+          $ref: '#/components/responses/400'
+        415:
+          $ref: '#/components/responses/415'
+
+  /ping:
+    get:
+      tags:
+        - Status
+      responses:
+        200:
+          $ref: '#/components/responses/ping'
+        400:
+          $ref: '#/components/responses/400'
+        415:
+          $ref: '#/components/responses/415'
+
+# =============================================================================
+
+components:
+  # ---------------------------------------------------------------------------
+  requestBodies:
+    postProject:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/PostProjectData'
+  # ---------------------------------------------------------------------------
+  responses:
+    # ERRORS
+    400:
+      description: Bad request.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+    403:
+      description: Forbidden.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+    404:
+      description: Not found.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+    409:
+      description: Conflict.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+    415:
+      description: Unsupported Media Type.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+    500:
+      description: Internal Server Error.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+    # PROJECTS
+    getProjects:
+      description: Projects info retrieved successfully.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Projects'
+
+    getProject:
+      description: Project info retrieved successfully.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Project'
+
+    postProject:
+      description: Project creation transaction initiated successfully.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Transaction'
+
+    getWallet:
+      description: Wallet retrieved successfully.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Wallet'
+
+    getAllWallets:
+      description: Wallets retrieveded successfully.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Wallets'
+
+    postWallet:
+      description: Wallet created successfully.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Wallet'
+
+    # STATUS
+    health:
+      description: Microservice general health state reported.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Health'
+
+    ping:
+      description: Server is active.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Ping'
+
+  # ---------------------------------------------------------------------------
+  schemas:
+    # GENERAL
+    Error:
+      type: object
+      properties:
+        error:
+          type: object
+          properties:
+            status:
+              type: integer
+            name:
+              type: string
+            message:
+              type: string
+            errors:
+              type: object
+            data:
+              type: object
+          required:
+            - status
+            - name
+      required:
+        - error
+
+        # TYPES
+
+    # Date:
+    #   type: string
+    #   format: date-time
+    #   example: '2021-06-13T21:29:29.330Z'
+
+    Id:
+      type: integer
+      example: 12
+      # type: string
+      # format: uuid
+      # example: '123e4567-e89b-12d3-a456-426614174000'
+
+    Address:
+      type: string
+      example: '0xf018Be4Fe4fBD4cA1B1162A44bB139a343C2087b'
+
+    Key:
+      type: string
+      example: '0xb9444636faac0ab28ac177c767fa434d7c0767d1b3019d980e079a4d644727ba'
+
+    StagesCost:
+      type: array
+      items:
+        type: integer
+      minItems: 1
+      example: [1, 2, 3]
+
+    # PROJECTS
+    Project:
+      type: object
+      properties:
+        id:
+          $ref: '#/components/schemas/Id'
+        projectOwnerAddress:
+          $ref: '#/components/schemas/Address'
+        projectReviewerAddress:
+          $ref: '#/components/schemas/Address'
+        stagesCost:
+          $ref: '#/components/schemas/StagesCost'
+      required:
+        - projectId
+        - projectOwnerAddress
+        - projectReviewerAddress
+        - stagesCost
+
+    Projects:
+      type: array
+      items:
+        $ref: '#/components/schemas/Project'
+
+    PostProjectData:
+      type: object
+      properties:
+        ownerId:
+          $ref: '#/components/schemas/Id'
+        reviewerId:
+          $ref: '#/components/schemas/Id'
+        stagesCost:
+          $ref: '#/components/schemas/StagesCost'
+      required:
+        - ownerId
+        - reviewerId
+        - stagesCost
+
+    # WALLETS
+    Wallet:
+      type: object
+      properties:
+        address:
+          $ref: '#/components/schemas/Address'
+        id:
+          $ref: '#/components/schemas/Id'
+        privateKey:
+          $ref: '#/components/schemas/Key'
+      required:
+        - address
+        - id
+        - privateKey
+
+    Wallets:
+      type: array
+      items:
+        $ref: '#/components/schemas/Wallet'
+
+    Transaction:
+      type: object
+      properties:
+        chainId:
+          $ref: '#/components/schemas/Id'
+        data:
+          type: string
+          example: '0xd86233940000000000000000000000000000000000000000000000000000000000000060000000000000000000000000f018be4fe4fbd4ca1b1162a44bb139a343c2087b00000000000000000000000019544c4b8ce1c08c81bb67c4075265d967935dcd00000000000000000000000000000000000000000000000000000000000000030000000000000000000000000000000000000000000000008ac7230489e80000000000000000000000000000000000000000000000000001158e460913d000000000000000000000000000000000000000000000000000008ac7230489e80000'
+        from:
+          $ref: '#/components/schemas/Address'
+
+    # {
+    #     "chainId": 42,
+    #     "data": "0xd86233940000000000000000000000000000000000000000000000000000000000000060000000000000000000000000f018be4fe4fbd4ca1b1162a44bb139a343c2087b00000000000000000000000019544c4b8ce1c08c81bb67c4075265d967935dcd00000000000000000000000000000000000000000000000000000000000000030000000000000000000000000000000000000000000000008ac7230489e80000000000000000000000000000000000000000000000000001158e460913d000000000000000000000000000000000000000000000000000008ac7230489e80000",
+    #     "from": "0x55B86Ea5ff4bb1E674BCbBe098322C7dD3f294BE",
+    #     "gasLimit": {
+    #         "hex": "0x02ba56",
+    #         "type": "BigNumber"
+    #     },
+    #     "gasPrice": {
+    #         "hex": "0x02d1375900",
+    #         "type": "BigNumber"
+    #     },
+    #     "hash": "0x30b003c570eccaf1705acd4621f72993acb51715f8decbf61535f21376cfe1d2",
+    #     "nonce": 19,
+    #     "r": "0xd06642b8b98b120829d24cc654b6ae9a22a16c31aa9e714c8f5306befe01cd3f",
+    #     "s": "0x5ad6c768417a99aa63f9a2e2aa3f493db601d9e317922535fb6c54f8cdc0fba9",
+    #     "to": "0xD0436D8e93df9c543eFd2c04152393A8D05B5A05",
+    #     "type": null,
+    #     "v": 119,
+    #     "value": {
+    #         "hex": "0x00",
+    #         "type": "BigNumber"
+    #     }
+    # }
+
+    # STATUS
+    Ping:
+      type: object
+      properties:
+        status:
+          type: string
+          example: 'ok'
+      required:
+        - status
+
+    Health:
+      type: object
+      properties:
+        database:
+          type: string
+          example: 'UP'
+      required:
+        - database
+#
+# =============================================================================
