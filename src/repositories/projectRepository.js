@@ -16,38 +16,42 @@ module.exports = function $projectRepository(dbUtils, errors, knex, logger) {
   /**
    * Inserts a new project and stages costs to db
    *
-   * @returns {Promise}
+   * @returns {String}
    */
   async function create(projectData) {
-    var a = knex('projects')
-      .insert(dbUtils.mapToDb({
-        projectId: projectData.projectId,
-        ownerAddress: projectData.projectOwnerAddress,
-        reviewerAddress: projectData.projectReviewerAddress,
-        totalStages: projectData.stagesCost.length
-      }))
+    await knex('projects')
+      .insert(
+        dbUtils.mapToDb({
+          projectId: projectData.projectId,
+          ownerAddress: projectData.projectOwnerAddress,
+          reviewerAddress: projectData.projectReviewerAddress,
+          totalStages: projectData.stagesCost.length
+        })
+      )
       .catch((err) => {
-        if (err.code === '23505') throw errors.create(409, 'Project already exists.')
+        if (err.code === '23505') throw errors.create(409, 'Project already exists.');
         // TODO: HANDLE ERRORS
 
         logger.error(err);
-        throw errors.Conflict;
+        throw errors.UnknownError;
       });
-    projectData.stagesCost.forEach(cost, i => {
+    stagesList = projectData.stagesCost.map(cost, (i) => {
       const stageCost = {
-        prjectId: projectData.projectId,
+        projectId: projectData.projectId,
         stage: i,
-        cost: cost,
-      }
-      var b = knex('stages_cost')
-        .insert(dbUtils.mapToDb(stageCost))
-        .catch((err) => {
-          // TODO: HANDLE ERRORS
-  
-          logger.error(err);
-          throw errors.Conflict;
-        });
+        cost
+      };
+      return stageCost;
     });
+    await knex('stages_cost')
+      .insert(dbUtils.mapToDb(stagesList))
+      .catch((err) => {
+        // TODO: HANDLE ERRORS
+
+        logger.error(err);
+        throw errors.UnknownError;
+      });
+    return projectData.projectId;
   }
 
   /**
@@ -56,16 +60,16 @@ module.exports = function $projectRepository(dbUtils, errors, knex, logger) {
    * @returns {Promise}
    */
   async function get({ select, filters = {}, limit, offset } = {}) {
-    const project_query = knex('projects')
+    const projectQuery = knex('projects')
       .select(_.isArray(select) ? dbUtils.mapToDb(select) : '*')
       .where(dbUtils.mapToDb(filters))
       .orderBy('project_id', 'desc');
 
-    if (limit) project_query.limit(limit);
-    if (offset) project_query.offset(offset);
+    if (limit) projectQuery.limit(limit);
+    if (offset) projectQuery.offset(offset);
 
-    projectData = project_query.then(dbUtils.mapFromDb);
-    
+    projectData = projectQuery.then(dbUtils.mapFromDb);
+
     // HMMM no
     // projectData.stagesCost = knex('projects')
     //   .select(_.isArray(select) ? dbUtils.mapToDb(select) : '*')
@@ -73,6 +77,6 @@ module.exports = function $projectRepository(dbUtils, errors, knex, logger) {
     //   .orderBy('project_id', 'desc')
     //   .then(dbUtils.mapFromDb);
 
-    return ;
+    return;
   }
 };
