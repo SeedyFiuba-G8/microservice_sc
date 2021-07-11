@@ -23,6 +23,10 @@ servers:
 tags:
   - name: Projects
   - name: Wallets
+  - name: Reviewer
+  - name: Sponsor
+  - name: Entrepeneur
+  - name: Funding
 
 # =============================================================================
 
@@ -82,6 +86,62 @@ paths:
           $ref: '#/components/responses/415'
         500:
           $ref: '#/components/responses/500'
+    patch:
+      summary: Advance a project stage.
+      description: Allows a reviewer to advance a project stage.
+      tags:
+        - Projects
+        - Reviewer
+      parameters:
+        - in: path
+          name: projectId
+          schema:
+            $ref: '#/components/schemas/TxHash' # TMP
+          required: true
+          description: id of the project to retrieve
+      requestBody:
+        $ref: '#/components/requestBodies/patchProject'
+      responses:
+        200:
+          $ref: '#/components/responses/patchProject'
+        400:
+          $ref: '#/components/responses/400'
+        404:
+          $ref: '#/components/responses/404'
+        415:
+          $ref: '#/components/responses/415'
+        500:
+          $ref: '#/components/responses/500'
+        
+  /projects/{projectId}/funds:
+    post:
+      summary: Fund a project.
+      description: Allows a payment from a wallet to fund a project.
+      tags:
+        - Sponsor
+        - Projects
+      parameters:
+        - in: path
+          name: projectId
+          schema:
+            $ref: '#/components/schemas/TxHash' # TMP
+          required: true
+          description: id of the project to retrieve
+      requestBody:
+        $ref: '#/components/requestBodies/postFund'
+      responses:
+        201:
+          $ref: '#/components/responses/postFund'
+        400:
+          $ref: '#/components/responses/400'
+        404:
+          $ref: '#/components/responses/404'
+        415:
+          $ref: '#/components/responses/415'
+        500:
+          $ref: '#/components/responses/500'
+    
+
 
   # WALLETS
   /wallets:
@@ -175,6 +235,20 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/PostProjectData'
+
+    patchProject:
+      required: true
+      content: 
+        application/json:
+          schema:
+            $ref: '#/components/schemas/PatchProject'
+
+    postFund:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/PostFundData'
   # ---------------------------------------------------------------------------
   responses:
     # ERRORS
@@ -242,6 +316,13 @@ components:
           schema:
             $ref: '#/components/schemas/Projects'
 
+    patchProject:
+      description: Project stage advanced successfully.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Hash'
+
     postProject:
       description: Project creation transaction initiated successfully.
       content:
@@ -249,6 +330,14 @@ components:
           schema:
             $ref: '#/components/schemas/TxHash'
 
+    postFund:
+      description: Project funding transaction successful.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Transaction'
+
+    # WALLETS
     getWallet:
       description: Wallet retrieved successfully.
       content:
@@ -320,6 +409,10 @@ components:
     Id:
       type: integer
       example: 12
+
+    Hash:
+      type: string
+      example: "0x30b003c570eccaf1705acd4621f72993acb51715f8decbf61535f21376cfe1d2"
 
     WalletId:
       type: string
@@ -399,6 +492,14 @@ components:
         - reviewerId
         - stagesCost
 
+    PatchProjectData:
+      type: object
+      properties:
+        nextStage:
+          $ref: '#/components/schemas/Stage'
+      required:
+        - nextStage
+
     # WALLETS
     Wallet:
       type: object
@@ -429,6 +530,18 @@ components:
           example: '0xd86233940000000000000000000000000000000000000000000000000000000000000060000000000000000000000000f018be4fe4fbd4ca1b1162a44bb139a343c2087b00000000000000000000000019544c4b8ce1c08c81bb67c4075265d967935dcd00000000000000000000000000000000000000000000000000000000000000030000000000000000000000000000000000000000000000008ac7230489e80000000000000000000000000000000000000000000000000001158e460913d000000000000000000000000000000000000000000000000000008ac7230489e80000'
         from:
           $ref: '#/components/schemas/Address'
+
+    # FUNDING
+    PostFundData:
+      type: object
+      properties:
+        walletId:
+          $ref: '#/components/schemas/WalletId'
+        amount:
+          type: number
+      required:
+        - walletId
+        - amount
 
     # STATUS
     Ping:
