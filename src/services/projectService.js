@@ -3,7 +3,7 @@ const ethers = require('ethers');
 
 const projects = {};
 
-module.exports = function $projectService(config) {
+module.exports = function $projectService(config, projectRepository) {
   return {
     create,
     get
@@ -40,9 +40,17 @@ module.exports = function $projectService(config) {
           projectReviewerAddress
         };
       } else {
+        // Throw?
         console.error(`Project not created in tx ${tx.hash}`);
       }
     });
+    projectRepository.create({
+      // tx.hash
+      projectId,
+      stagesCost,
+      projectOwnerAddress,
+      projectReviewerAddress
+    })
     return tx;
   }
 
