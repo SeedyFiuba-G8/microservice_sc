@@ -24,34 +24,39 @@ module.exports = function $projectService(config, projectRepository) {
    * @returns {Promise} uuid
    */
   async function create(deployerWallet, stagesCost, projectOwnerAddress, projectReviewerAddress) {
+    let projectId;
     const seedyfiuba = await getContract(config, deployerWallet);
     const tx = await seedyfiuba.createProject(stagesCost.map(toWei), projectOwnerAddress, projectReviewerAddress);
-    tx.wait(1).then((receipt) => {
-      console.log('Transaction mined');
-      const firstEvent = receipt && receipt.events && receipt.events[0];
-      console.log(firstEvent);
-      if (firstEvent && firstEvent.event == 'ProjectCreated') {
-        const projectId = firstEvent.args.projectId.toNumber();
-        console.log();
-        projects[tx.hash] = {
-          projectId,
-          stagesCost,
-          projectOwnerAddress,
-          projectReviewerAddress
-        };
-      } else {
-        // Throw?
-        console.error(`Project not created in tx ${tx.hash}`);
-      }
-    });
-    projectRepository.create({
-      // tx.hash
-      projectId,
-      stagesCost,
-      projectOwnerAddress,
-      projectReviewerAddress
-    })
-    return tx;
+    tx.wait(1)
+      .then((receipt) => {
+        console.log('Transaction mined');
+        const firstEvent = receipt && receipt.events && receipt.events[0];
+        console.log(firstEvent);
+        if (firstEvent && firstEvent.event == 'ProjectCreated') {
+          projectId = firstEvent.args.projectId.toNumber();
+          console.log();
+          projects[tx.hash] = {
+            projectId,
+            stagesCost,
+            projectOwnerAddress,
+            projectReviewerAddress
+          };
+        } else {
+          logger.error(`Project not created in tx ${tx.hash}`);
+          throw error.UnknownError;
+        }
+      })
+      .then(
+        async () =>
+          await projectRepository.create({
+            hash: tx.hash,
+            projectId,
+            stagesCost,
+            projectOwnerAddress,
+            projectReviewerAddress
+          })
+      );
+    return tx.hash;
   }
 
   async function get(id) {

@@ -22,6 +22,7 @@ module.exports = function $projectRepository(dbUtils, errors, knex, logger) {
     await knex('projects')
       .insert(
         dbUtils.mapToDb({
+          tx_hash: projectData.hash,
           projectId: projectData.projectId,
           ownerAddress: projectData.projectOwnerAddress,
           reviewerAddress: projectData.projectReviewerAddress,
