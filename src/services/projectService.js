@@ -1,12 +1,11 @@
 const BigNumber = require('bignumber.js');
 const ethers = require('ethers');
 
-const projects = {};
-
-module.exports = function $projectService(config) {
+module.exports = function $projectService(config, projectRepository) {
   return {
     create,
-    get
+    get,
+    getAll
   };
 
   function getContract(config, wallet) {
@@ -24,30 +23,49 @@ module.exports = function $projectService(config) {
    * @returns {Promise} uuid
    */
   async function create(deployerWallet, stagesCost, projectOwnerAddress, projectReviewerAddress) {
+    let projectId;
     const seedyfiuba = await getContract(config, deployerWallet);
     const tx = await seedyfiuba.createProject(stagesCost.map(toWei), projectOwnerAddress, projectReviewerAddress);
-    tx.wait(1).then((receipt) => {
-      console.log('Transaction mined');
-      const firstEvent = receipt && receipt.events && receipt.events[0];
-      console.log(firstEvent);
-      if (firstEvent && firstEvent.event == 'ProjectCreated') {
-        const projectId = firstEvent.args.projectId.toNumber();
-        console.log();
-        projects[tx.hash] = {
-          projectId,
-          stagesCost,
-          projectOwnerAddress,
-          projectReviewerAddress
-        };
-      } else {
-        console.error(`Project not created in tx ${tx.hash}`);
-      }
-    });
-    return tx;
+    tx.wait(1)
+      .then((receipt) => {
+        console.log('Transaction mined');
+        const firstEvent = receipt && receipt.events && receipt.events[0];
+        console.log(firstEvent);
+        if (firstEvent && firstEvent.event == 'ProjectCreated') {
+          projectId = firstEvent.args.projectId.toNumber();
+          console.log(`Project created in tx ${tx.hash}`);
+        } else {
+          logger.error(`Project not created in tx ${tx.hash}`);
+          throw error.UnknownError;
+        }
+      })
+      .then(
+        async () =>
+          await projectRepository.create({
+            hash: tx.hash,
+            projectId,
+            stagesCost,
+            projectOwnerAddress,
+            projectReviewerAddress
+          })
+      );
+    return tx.hash;
   }
 
-  async function get(id) {
-    console.log(`Getting project ${id}: ${projects[id]}`);
-    return projects[id];
+  async function get(txHash) {
+    console.log(`Getting project with hash: ${txHash}`);
+    const projectData = await projectRepository.get({
+      filters: {
+        txHash
+      }
+    });
+    if (!projectData.length) throw errors.create(404, 'No project found with specified id.');
+    return projectData[0];
+  }
+
+  async function getAll() {
+    const projects = await projectRepository.get();
+    console.log(`Getting all projects: ${JSON.stringify(projects)}`);
+    return projects;
   }
 };

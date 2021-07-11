@@ -9,5 +9,5 @@ cd ./scripts
 echo "Seedy FIUBA - Smart contract microservice\n"
 
 echo "> CREATING TABLE 'wallets':"
-psql $DATABASE_URL -f wallets.sql
+psql $DATABASE_URL -f create_tables.sql
 
