@@ -1,11 +1,5 @@
 const _ = require('lodash');
 
-/*
- * For convenience, we use the core microservice userId as the walletId,
- * in order to keep up with the restriction of 1 user <--> 1 wallet,
- * and to avoid an unnecessary mapping.
- */
-
 module.exports = function $walletRepository(dbUtils, errors, knex, logger) {
   return {
     create,
@@ -22,7 +16,7 @@ module.exports = function $walletRepository(dbUtils, errors, knex, logger) {
     return knex('wallets')
       .insert(dbUtils.mapToDb(walletData))
       .catch((err) => {
-        if (err.code === '23505') throw errors.create(409, 'The user has an existing wallet.');
+        if (err.code === '23505') throw errors.create(409, 'There is an existing wallet with specified id.');
 
         logger.error(err);
         throw errors.Conflict;
