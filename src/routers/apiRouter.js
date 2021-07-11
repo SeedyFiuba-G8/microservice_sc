@@ -11,6 +11,7 @@ module.exports = function apiRouter(apiValidatorMiddleware, projectController, s
       .use(apiValidatorMiddleware)
 
       // PROJECTS
+      .get('/projects', projectController.getAll)
       .post('/projects', projectController.create)
       .get('/projects/:projectId', projectController.get)
 

@@ -1,16 +1,9 @@
 const _ = require('lodash');
 
-/*
- * For convenience, we use the core microservice userId as the walletId,
- * in order to keep up with the restriction of 1 user <--> 1 wallet,
- * and to avoid an unnecessary mapping.
- */
-
 module.exports = function $projectRepository(dbUtils, errors, knex, logger) {
   return {
     create,
-    get,
-    remove
+    get
   };
 
   /**
@@ -22,7 +15,7 @@ module.exports = function $projectRepository(dbUtils, errors, knex, logger) {
     await knex('projects')
       .insert(
         dbUtils.mapToDb({
-          tx_hash: projectData.hash,
+          txHash: projectData.hash,
           projectId: projectData.projectId,
           ownerAddress: projectData.projectOwnerAddress,
           reviewerAddress: projectData.projectReviewerAddress,
@@ -36,7 +29,7 @@ module.exports = function $projectRepository(dbUtils, errors, knex, logger) {
         logger.error(err);
         throw errors.UnknownError;
       });
-    stagesList = projectData.stagesCost.map(cost, (i) => {
+    stagesList = projectData.stagesCost.map((cost, i) => {
       const stageCost = {
         projectId: projectData.projectId,
         stage: i,
@@ -44,6 +37,7 @@ module.exports = function $projectRepository(dbUtils, errors, knex, logger) {
       };
       return stageCost;
     });
+    console.log(`Stages: ${JSON.stringify(stagesList)}`);
     await knex('stages_cost')
       .insert(dbUtils.mapToDb(stagesList))
       .catch((err) => {
@@ -69,15 +63,28 @@ module.exports = function $projectRepository(dbUtils, errors, knex, logger) {
     if (limit) projectQuery.limit(limit);
     if (offset) projectQuery.offset(offset);
 
-    projectData = projectQuery.then(dbUtils.mapFromDb);
+    const projects = await projectQuery.then(dbUtils.mapFromDb);
+    const ids = projects.map((project) => project.projectId);
 
-    // HMMM no
-    // projectData.stagesCost = knex('projects')
-    //   .select(_.isArray(select) ? dbUtils.mapToDb(select) : '*')
-    //   .where(dbUtils.mapToDb({projectId: projectData.projectId}))
-    //   .orderBy('project_id', 'desc')
-    //   .then(dbUtils.mapFromDb);
+    console.log('ids: ', ids);
 
-    return;
+    const stagesQuery = knex('stages_cost').whereIn('project_id', ids).orderBy('stage', 'asc');
+
+    const stages = await stagesQuery.then(dbUtils.mapFromDb);
+
+    console.log('stages: ', stages);
+
+    projects.forEach((project) => {
+      project.stagesCost = stages
+        .filter((stage) => stage.projectId === project.projectId)
+        .map((stage) => {
+          return stage.cost;
+        });
+      return project;
+    });
+
+    console.log('projects after adding stages: ', projects);
+
+    return projects;
   }
 };

@@ -29,9 +29,23 @@ tags:
 paths:
   # PROJECTS
   /projects:
+    get:
+      summary: Get all projects
+      description: Allows a user to get all projects.
+      tags:
+        - Projects
+      responses:
+        200:
+          $ref: '#/components/responses/getAllProjects'
+        400:
+          $ref: '#/components/responses/400'
+        415:
+          $ref: '#/components/responses/415'
+        500:
+          $ref: '#/components/responses/500'
     post:
       summary: Create a new project
-      description: Allows an entrepeneur user to create a new project.
+      description: Allows a user to create a new project.
       tags:
         - Projects
       requestBody:
@@ -56,7 +70,7 @@ paths:
         - in: path
           name: projectId
           schema:
-            $ref: '#/components/schemas/Id'
+            $ref: '#/components/schemas/TxHash' # TMP
           required: true
           description: id of the project to retrieve
       responses:
@@ -220,13 +234,20 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/Project'
+            
+    getAllProjects:
+      description: Project info retrieved successfully.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Projects'
 
     postProject:
       description: Project creation transaction initiated successfully.
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/Transaction'
+            $ref: '#/components/schemas/TxHash'
 
     getWallet:
       description: Wallet retrieved successfully.
@@ -313,29 +334,50 @@ components:
       type: string
       example: '0xb9444636faac0ab28ac177c767fa434d7c0767d1b3019d980e079a4d644727ba'
 
+    Stage:
+      type: integer
+
+    Status:
+      type: string
+      example: 'FUNDING'
+      
+    TxHash:
+      type: string
+      example: '0x30b003c570eccaf1705acd4621f72993acb51715f8decbf61535f21376cfe1d2'
+
     StagesCost:
       type: array
       items:
-        type: integer
+        type: number
       minItems: 1
-      example: [1, 2, 3]
+      example: [1, 2.3, 3]
 
     # PROJECTS
     Project:
       type: object
       properties:
+        txHash:
+          $ref: '#/components/schemas/TxHash'
         id:
           $ref: '#/components/schemas/Id'
-        projectOwnerAddress:
+        ownerAddress:
           $ref: '#/components/schemas/Address'
-        projectReviewerAddress:
+        reviewerAddress:
           $ref: '#/components/schemas/Address'
+        currentStatus:
+          $ref: '#/components/schemas/Status'
+        totalStages:
+          $ref: '#/components/schemas/Stage'
         stagesCost:
           $ref: '#/components/schemas/StagesCost'
+        
       required:
+        - txHash
         - projectId
-        - projectOwnerAddress
-        - projectReviewerAddress
+        - ownerAddress
+        - reviewerAddress
+        - currentStatus
+        - totalStages
         - stagesCost
 
     Projects:
@@ -387,31 +429,6 @@ components:
           example: '0xd86233940000000000000000000000000000000000000000000000000000000000000060000000000000000000000000f018be4fe4fbd4ca1b1162a44bb139a343c2087b00000000000000000000000019544c4b8ce1c08c81bb67c4075265d967935dcd00000000000000000000000000000000000000000000000000000000000000030000000000000000000000000000000000000000000000008ac7230489e80000000000000000000000000000000000000000000000000001158e460913d000000000000000000000000000000000000000000000000000008ac7230489e80000'
         from:
           $ref: '#/components/schemas/Address'
-
-    # {
-    #     "chainId": 42,
-    #     "data": "0xd86233940000000000000000000000000000000000000000000000000000000000000060000000000000000000000000f018be4fe4fbd4ca1b1162a44bb139a343c2087b00000000000000000000000019544c4b8ce1c08c81bb67c4075265d967935dcd00000000000000000000000000000000000000000000000000000000000000030000000000000000000000000000000000000000000000008ac7230489e80000000000000000000000000000000000000000000000000001158e460913d000000000000000000000000000000000000000000000000000008ac7230489e80000",
-    #     "from": "0x55B86Ea5ff4bb1E674BCbBe098322C7dD3f294BE",
-    #     "gasLimit": {
-    #         "hex": "0x02ba56",
-    #         "type": "BigNumber"
-    #     },
-    #     "gasPrice": {
-    #         "hex": "0x02d1375900",
-    #         "type": "BigNumber"
-    #     },
-    #     "hash": "0x30b003c570eccaf1705acd4621f72993acb51715f8decbf61535f21376cfe1d2",
-    #     "nonce": 19,
-    #     "r": "0xd06642b8b98b120829d24cc654b6ae9a22a16c31aa9e714c8f5306befe01cd3f",
-    #     "s": "0x5ad6c768417a99aa63f9a2e2aa3f493db601d9e317922535fb6c54f8cdc0fba9",
-    #     "to": "0xD0436D8e93df9c543eFd2c04152393A8D05B5A05",
-    #     "type": null,
-    #     "v": 119,
-    #     "value": {
-    #         "hex": "0x00",
-    #         "type": "BigNumber"
-    #     }
-    # }
 
     # STATUS
     Ping:
