@@ -65,25 +65,17 @@ module.exports = function $projectRepository(dbUtils, errors, knex, logger) {
 
     const projects = await projectQuery.then(dbUtils.mapFromDb);
     const ids = projects.map((project) => project.projectId);
-
-    console.log('ids: ', ids);
-
     const stagesQuery = knex('stages_cost').whereIn('project_id', ids).orderBy('stage', 'asc');
-
     const stages = await stagesQuery.then(dbUtils.mapFromDb);
-
-    console.log('stages: ', stages);
 
     projects.forEach((project) => {
       project.stagesCost = stages
         .filter((stage) => stage.projectId === project.projectId)
         .map((stage) => {
-          return stage.cost;
+          return Number(stage.cost);
         });
       return project;
     });
-
-    console.log('projects after adding stages: ', projects);
 
     return projects;
   }

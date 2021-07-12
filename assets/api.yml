@@ -59,6 +59,8 @@ paths:
           $ref: '#/components/responses/postProject'
         400:
           $ref: '#/components/responses/400'
+        404:
+          $ref: '#/components/responses/404'
         415:
           $ref: '#/components/responses/415'
         500:
@@ -130,7 +132,7 @@ paths:
       requestBody:
         $ref: '#/components/requestBodies/postFund'
       responses:
-        201:
+        200:
           $ref: '#/components/responses/postFund'
         400:
           $ref: '#/components/responses/400'
@@ -241,7 +243,7 @@ components:
       content: 
         application/json:
           schema:
-            $ref: '#/components/schemas/PatchProject'
+            $ref: '#/components/schemas/PatchProjectData'
 
     postFund:
       required: true
@@ -335,7 +337,7 @@ components:
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/Transaction'
+            $ref: '#/components/schemas/TxHash'
 
     # WALLETS
     getWallet:
@@ -380,26 +382,21 @@ components:
     Error:
       type: object
       properties:
-        error:
-          type: object
-          properties:
-            status:
-              type: integer
-            name:
-              type: string
-            message:
-              type: string
-            errors:
-              type: object
-            data:
-              type: object
-          required:
-            - status
-            - name
+        status:
+          type: integer
+        name:
+          type: string
+        message:
+          type: string
+        errors:
+          type: array
+          items:
+            type: object
       required:
-        - error
+        - status
+        - name
 
-        # TYPES
+    # TYPES
 
     # Date:
     #   type: string
