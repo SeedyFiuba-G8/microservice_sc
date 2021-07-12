@@ -15,8 +15,8 @@ module.exports = function $projectService(config, errors, logger, projectReposit
   /**
    * Assert a project's status.
    */
-  async function assertProjectStatus(projectStatus, status) {
-    if (projectStatus !== status)
+  async function assertProjectStatus(currentStatus, status) {
+    if (currentStatus !== status)
       throw errors.create(400, `Project not in ${status} status. (current: ${project.currentStatus})`);
   }
 
@@ -28,6 +28,21 @@ module.exports = function $projectService(config, errors, logger, projectReposit
       logger.error(`Obtained projectId from transaction different: ${projectId} && ${otherId}`);
       throw errors.UnknownError;
     }
+  }
+
+  /**
+   * Assert a proj
+   */
+  async function assertProjectStage(currentStage, totalStages, completedStage) {
+    if (currentStage > completedStage || completedStage > totalStages - 1)
+      throw errors.create(400, 'Invalid value for new stage.');
+  }
+
+  /**
+   * Assert a project's Reviewer address.
+   */
+  async function assertProjectReviewer(address, reviewerAdress) {
+    if (address !== reviewerAdress) throw errors.create(400, 'Given reviewer adress is incorrect for project.');
   }
 
   function getContract(config, wallet) {
@@ -55,7 +70,7 @@ module.exports = function $projectService(config, errors, logger, projectReposit
     const tx = await seedyfiuba.createProject(stagesCost.map(toWei), projectOwnerAddress, projectReviewerAddress);
     tx.wait(1)
       .then((receipt) => {
-        logger.info('Transaction mined');
+        logger.info('CreateProject transaction mined');
         const firstEvent = receipt && receipt.events && receipt.events[0];
         if (firstEvent && firstEvent.event == 'ProjectCreated') {
           projectId = firstEvent.args.projectId.toNumber();
@@ -82,10 +97,10 @@ module.exports = function $projectService(config, errors, logger, projectReposit
     const projectId = (await get(txHash)).projectId; // TMP
 
     async function validateFunding(wallet, projectId, amount) {
-      const project = await get(projectId);
-      await assertProjectStatus(project.status, projectRepository.status.FUNDING);
+      const project = await _get(projectId);
+      await assertProjectStatus(project.currentStatus, projectRepository.status.FUNDING);
       const sponsorBalance = await wallet.getBalance();
-      if (sponsorBalance < toWei(amount))
+      if (sponsorBalance.lt(toWei(amount)))
         throw errors.create(
           400,
           `Insufficient funds. Funds available (${sponsorBalance}) < funds requested (${toWei(amount)})`
@@ -99,15 +114,13 @@ module.exports = function $projectService(config, errors, logger, projectReposit
 
           const received = fromWei(event.args.funds);
 
-          console.log('received:', received);
-
           await projectRepository.fund(projectId, sponsorId, received, txHash);
           logger.info(`Project funded in tx ${txHash}`);
         },
         ProjectStarted: async (event, txHash) => {
           assertProjectId(projectId, event.args.projectId.toNumber());
 
-          await projectRepository.setStatus(projectId, projectRepository.status.IN_PROGRESS);
+          await projectRepository.update(projectId, { currentStatus: projectRepository.status.IN_PROGRESS });
           logger.info(`Project funding completed. Project started in tx ${txHash}`);
         }
       };
@@ -120,8 +133,6 @@ module.exports = function $projectService(config, errors, logger, projectReposit
     }
 
     await validateFunding(sponsorWallet, projectId, amount);
-
-    console.log('Verified funding');
 
     const seedyfiuba = await getContract(config, sponsorWallet);
     const tx = await seedyfiuba.fund(projectId, { value: toWei(amount), gasLimit: GAS_LIMIT });
@@ -140,7 +151,8 @@ module.exports = function $projectService(config, errors, logger, projectReposit
       .then(async () => {
         // TMP
         const project = await seedyfiuba.projects(projectId);
-        console.log('Project: ', project, ' missingAmount:', fromWei(project.missingAmount));
+        console.log('Project:', project);
+        console.log('MissingAmount:', fromWei(project.missingAmount));
       });
     return tx.hash;
   }
@@ -156,20 +168,73 @@ module.exports = function $projectService(config, errors, logger, projectReposit
     return projectData[0];
   }
 
+  async function _get(projectId) {
+    logger.info(`Getting project with id: ${projectId}`);
+    const projectData = await projectRepository.get({
+      filters: {
+        projectId
+      }
+    });
+    if (!projectData.length) throw errors.create(404, 'No project found with specified id.');
+    return projectData[0];
+  }
+
   async function getAll() {
     const projects = await projectRepository.get();
     logger.info(`Getting all projects: ${JSON.stringify(projects)}`);
     return projects;
   }
 
-  async function setCompletedStage(projectId, reviewerId, reviewerWallet, nextStage) {
-    const seedyfiuba = await getContract(config, reviewerWallet);
-    const tx = await seedyfiuba.setCompletedStage(projectId, nextStage);
+  async function setCompletedStage(txHash, reviewerWallet, completedStage) {
+    const projectId = (await get(txHash)).projectId; // TMP
 
-    async function validateStageCompletion(projectId, reviewerId) {
-      const project = await get(projectId);
-      await assertProjectStatus(project.status, projectRepository.status.IN_PROGRESS);
-      // await assertProjectReviewer(projectId, reviewerId);
+    async function validateStageCompletion(projectId, reviewerWallet, completedStage) {
+      const project = await _get(projectId);
+      await assertProjectStatus(project.currentStatus, projectRepository.status.IN_PROGRESS);
+      await assertProjectStage(project.currentStage, project.totalStages, completedStage);
+      await assertProjectReviewer(project.reviewerAdress, reviewerWallet.adress);
     }
+
+    async function handleEvent(event) {
+      const handlers = {
+        StageCompleted: async (event) => {
+          logger.info('Stage completed!');
+          const projectId = event.args.projectId;
+          const completedStage = event.args.completedStage;
+
+          projectRepository.update(projectId, { currentStage: completedStage + 1 });
+        },
+        ProjectCompleted: async (event) => {
+          logger.info('Project completed!');
+          const projectId = event.args.projectId;
+
+          projectRepository.update(projectId, { currentStatus: projectRepository.status.COMPLETED });
+        }
+      };
+    }
+
+    await validateStageCompletion(projectId, reviewerWallet, completedStage);
+
+    const seedyfiuba = await getContract(config, reviewerWallet);
+    const tx = await seedyfiuba.setCompletedStage(projectId, completedStage);
+    tx.wait(1)
+      .then((receipt) => {
+        logger.info('SetCompletedStage transaction mined.');
+        if (!(receipt && receipt.events)) {
+          logger.error(`Project ${projectId} didn't advance stage in tx ${tx.hash}`);
+          throw errors.UnknownError;
+        }
+
+        receipt.events.forEach(async (event) => {
+          await handleEvent(event, projectId);
+        });
+      })
+      .then(async () => {
+        // TMP
+        const project = await seedyfiuba.projects(projectId);
+        console.log('Project:', project);
+        console.log('MissingAmount:', fromWei(project.missingAmount));
+      });
+    return tx.hash;
   }
 };

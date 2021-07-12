@@ -11,7 +11,7 @@ module.exports = function $projectRepository(dbUtils, errors, knex, logger) {
   return {
     create,
     get,
-    setStatus,
+    update,
     fund,
     status: STATUS
   };
@@ -105,15 +105,27 @@ module.exports = function $projectRepository(dbUtils, errors, knex, logger) {
    *
    * @returns {Promise}
    */
-  async function setStatus(projectId, status) {
-    logger.info(`Setting project as ${status}: ${projectId}`);
+  async function update(projectId, updateFields) {
+    logger.debug(`Updating fields: ${JSON.stringify(updateFields)} of: ${projectId}`);
 
-    console.log();
+    const update_fields = dbUtils.mapToDb(updateFields);
+    console.log(update_fields);
 
-    return await knex('projects')
-      .update('current_status', status)
-      .where(dbUtils.mapToDb({ projectId }))
-      .then(dbUtils.mapFromDb);
+    const project_id = dbUtils.mapToDb({ projectId: String(projectId) });
+    console.log(project_id);
+
+    return knex('projects')
+      .update(update_fields)
+      .where(project_id)
+      .then((response) => {
+        console.log(response);
+        return dbUtils.mapFromDb(response);
+      })
+      .catch((err) => {
+        // TODO: handle errors.
+        logger.error(err);
+        throw errors.UnknownError;
+      });
   }
 
   /**
@@ -122,8 +134,6 @@ module.exports = function $projectRepository(dbUtils, errors, knex, logger) {
    * @returns {Promise}
    */
   async function fund(projectId, walletId, amount, txHash) {
-    await assertProjectStatus(projectId, STATUS.FUNDING);
-
     logger.info(`Funding project: ${projectId} by: ${walletId} with amount: ${amount}`);
 
     return await knex('records')

@@ -65,9 +65,8 @@ module.exports = function $projectController(expressify, projectService, walletS
   async function patch(req, res) {
     const tx = await projectService.setCompletedStage(
       req.params.projectId,
-      req.body.reviewerId,
       await walletService.getWallet(req.body.reviewerId),
-      req.body.nextStage
+      req.body.completedStage
     );
     return res.status(200).json(tx);
   }

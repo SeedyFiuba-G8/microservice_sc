@@ -498,11 +498,11 @@ components:
       properties:
         reviewerId:
           $ref: '#/components/schemas/WalletId'
-        nextStage:
+        completedStage:
           $ref: '#/components/schemas/Stage'
       required:
         - reviewerId
-        - nextStage
+        - completedStage
 
     # WALLETS
     Wallet:
