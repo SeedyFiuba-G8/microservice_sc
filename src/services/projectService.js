@@ -1,13 +1,34 @@
 const BigNumber = require('bignumber.js');
 const ethers = require('ethers');
 
+const GAS_LIMIT = 100000;
+
 module.exports = function $projectService(config, errors, logger, projectRepository) {
   return {
     create,
     fund,
     get,
-    getAll
+    getAll,
+    setCompletedStage
   };
+
+  /**
+   * Assert a project's status.
+   */
+  async function assertProjectStatus(projectStatus, status) {
+    if (projectStatus !== status)
+      throw errors.create(400, `Project not in ${status} status. (current: ${project.currentStatus})`);
+  }
+
+  /**
+   * Assert a project's Id.
+   */
+  function assertProjectId(project, otherId) {
+    if (project !== otherId) {
+      logger.error(`Obtained projectId from transaction different: ${projectId} && ${otherId}`);
+      throw errors.UnknownError;
+    }
+  }
 
   function getContract(config, wallet) {
     return new ethers.Contract(config.contractAddress, config.contractAbi, wallet);
@@ -61,20 +82,20 @@ module.exports = function $projectService(config, errors, logger, projectReposit
     const projectId = (await get(txHash)).projectId; // TMP
 
     async function validateFunding(wallet, projectId, amount) {
-      await projectRepository.assertProjectStatus(projectId, projectRepository.status.FUNDING);
-      if ((await wallet.getBalance()) < toWei(amount)) throw errors.create(400, 'Insuficient funds.');
-    }
-    function verifyProjectId(project, otherId) {
-      if (project !== otherId) {
-        logger.error(`Obtained projectId from transaction different: ${projectId} && ${otherId}`);
-        throw errors.UnknownError;
-      }
+      const project = await get(projectId);
+      await assertProjectStatus(project.status, projectRepository.status.FUNDING);
+      const sponsorBalance = await wallet.getBalance();
+      if (sponsorBalance < toWei(amount))
+        throw errors.create(
+          400,
+          `Insufficient funds. Funds available (${sponsorBalance}) < funds requested (${toWei(amount)})`
+        );
     }
 
     async function handleEvent(event, txHash) {
       const handlersMap = {
         ProjectFunded: async (event, txHash) => {
-          verifyProjectId(projectId, event.args.projectId.toNumber());
+          assertProjectId(projectId, event.args.projectId.toNumber());
 
           const received = fromWei(event.args.funds);
 
@@ -84,7 +105,7 @@ module.exports = function $projectService(config, errors, logger, projectReposit
           logger.info(`Project funded in tx ${txHash}`);
         },
         ProjectStarted: async (event, txHash) => {
-          verifyProjectId(projectId, event.args.projectId.toNumber());
+          assertProjectId(projectId, event.args.projectId.toNumber());
 
           await projectRepository.setStatus(projectId, projectRepository.status.IN_PROGRESS);
           logger.info(`Project funding completed. Project started in tx ${txHash}`);
@@ -103,7 +124,7 @@ module.exports = function $projectService(config, errors, logger, projectReposit
     console.log('Verified funding');
 
     const seedyfiuba = await getContract(config, sponsorWallet);
-    const tx = await seedyfiuba.fund(projectId, { value: toWei(amount), gasLimit: 100000 });
+    const tx = await seedyfiuba.fund(projectId, { value: toWei(amount), gasLimit: GAS_LIMIT });
     tx.wait(1)
       .then(async (receipt) => {
         logger.info('Funding transaction mined');
@@ -139,5 +160,16 @@ module.exports = function $projectService(config, errors, logger, projectReposit
     const projects = await projectRepository.get();
     logger.info(`Getting all projects: ${JSON.stringify(projects)}`);
     return projects;
+  }
+
+  async function setCompletedStage(projectId, reviewerId, reviewerWallet, nextStage) {
+    const seedyfiuba = await getContract(config, reviewerWallet);
+    const tx = await seedyfiuba.setCompletedStage(projectId, nextStage);
+
+    async function validateStageCompletion(projectId, reviewerId) {
+      const project = await get(projectId);
+      await assertProjectStatus(project.status, projectRepository.status.IN_PROGRESS);
+      // await assertProjectReviewer(projectId, reviewerId);
+    }
   }
 };

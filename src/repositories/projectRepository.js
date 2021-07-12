@@ -13,7 +13,6 @@ module.exports = function $projectRepository(dbUtils, errors, knex, logger) {
     get,
     setStatus,
     fund,
-    assertProjectStatus,
     status: STATUS
   };
 
@@ -99,16 +98,6 @@ module.exports = function $projectRepository(dbUtils, errors, knex, logger) {
     });
 
     return projects;
-  }
-
-  /**
-   * Assert a project's status.
-   *
-   */
-  async function assertProjectStatus(projectId, status) {
-    const project = (await get({ filters: { projectId } }))[0];
-    if (project.currentStatus !== status)
-      throw errors.create(400, `Project not in ${status} status. (current: ${project.currentStatus})`);
   }
 
   /**

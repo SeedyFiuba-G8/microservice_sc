@@ -3,7 +3,8 @@ module.exports = function $projectController(expressify, projectService, walletS
     create,
     fund,
     get,
-    getAll
+    getAll,
+    patch
   });
 
   /**
@@ -54,5 +55,20 @@ module.exports = function $projectController(expressify, projectService, walletS
   async function getAll(req, res) {
     const projectsList = await projectService.getAll();
     return res.status(200).json(projectsList);
+  }
+
+  /**
+   * Advance the stage of a project
+   *
+   * @returns
+   */
+  async function patch(req, res) {
+    const tx = await projectService.setCompletedStage(
+      req.params.projectId,
+      req.body.reviewerId,
+      await walletService.getWallet(req.body.reviewerId),
+      req.body.nextStage
+    );
+    return res.status(200).json(tx);
   }
 };

@@ -114,7 +114,7 @@ paths:
           $ref: '#/components/responses/415'
         500:
           $ref: '#/components/responses/500'
-        
+
   /projects/{projectId}/funds:
     post:
       summary: Fund a project.
@@ -142,8 +142,6 @@ paths:
           $ref: '#/components/responses/415'
         500:
           $ref: '#/components/responses/500'
-    
-
 
   # WALLETS
   /wallets:
@@ -240,7 +238,7 @@ components:
 
     patchProject:
       required: true
-      content: 
+      content:
         application/json:
           schema:
             $ref: '#/components/schemas/PatchProjectData'
@@ -310,7 +308,7 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/Project'
-            
+
     getAllProjects:
       description: Project info retrieved successfully.
       content:
@@ -323,7 +321,7 @@ components:
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/Hash'
+            $ref: '#/components/schemas/TxHash'
 
     postProject:
       description: Project creation transaction initiated successfully.
@@ -409,7 +407,7 @@ components:
 
     Hash:
       type: string
-      example: "0x30b003c570eccaf1705acd4621f72993acb51715f8decbf61535f21376cfe1d2"
+      example: '0x30b003c570eccaf1705acd4621f72993acb51715f8decbf61535f21376cfe1d2'
 
     WalletId:
       type: string
@@ -430,7 +428,7 @@ components:
     Status:
       type: string
       example: 'FUNDING'
-      
+
     TxHash:
       type: string
       example: '0x30b003c570eccaf1705acd4621f72993acb51715f8decbf61535f21376cfe1d2'
@@ -465,7 +463,7 @@ components:
           $ref: '#/components/schemas/ETHAmount'
         stagesCost:
           $ref: '#/components/schemas/StagesCost'
-        
+
       required:
         - txHash
         - projectId
@@ -498,9 +496,12 @@ components:
     PatchProjectData:
       type: object
       properties:
+        reviewerId:
+          $ref: '#/components/schemas/WalletId'
         nextStage:
           $ref: '#/components/schemas/Stage'
       required:
+        - reviewerId
         - nextStage
 
     # WALLETS

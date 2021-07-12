@@ -31,6 +31,7 @@ module.exports = function $walletService(config, errors, walletRepository) {
         // the amount (in wei) this transaction is sending
         value: ethers.utils.parseEther('1000')
       };
+
       const deployerWallet = getDeployerWallet();
       const txResponse = await deployerWallet.sendTransaction(tx);
     }

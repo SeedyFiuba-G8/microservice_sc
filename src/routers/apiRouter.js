@@ -14,7 +14,7 @@ module.exports = function apiRouter(apiValidatorMiddleware, projectController, s
       .get('/projects', projectController.getAll)
       .post('/projects', projectController.create)
       .get('/projects/:projectId', projectController.get)
-      //.patch('/projects/:projectId', projectController.patch)
+      .patch('/projects/:projectId', projectController.patch)
       .post('/projects/:projectId/funds', projectController.fund)
 
       // WALLETS
