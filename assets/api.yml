@@ -442,6 +442,9 @@ components:
       minItems: 1
       example: [1, 2.3, 3]
 
+    ETHAmount:
+      type: number
+
     # PROJECTS
     Project:
       type: object
@@ -458,6 +461,8 @@ components:
           $ref: '#/components/schemas/Status'
         totalStages:
           $ref: '#/components/schemas/Stage'
+        totalFunded:
+          $ref: '#/components/schemas/ETHAmount'
         stagesCost:
           $ref: '#/components/schemas/StagesCost'
         
@@ -468,6 +473,7 @@ components:
         - reviewerAddress
         - currentStatus
         - totalStages
+        - totalFunded
         - stagesCost
 
     Projects:
@@ -535,7 +541,7 @@ components:
         walletId:
           $ref: '#/components/schemas/WalletId'
         amount:
-          type: number
+          $ref: '#/components/schemas/ETHAmount'
       required:
         - walletId
         - amount

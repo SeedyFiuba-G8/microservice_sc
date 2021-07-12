@@ -21,21 +21,20 @@ module.exports = function $walletService(config, errors, walletRepository) {
       address: wallet.address,
       privateKey: wallet.privateKey
     };
-    // This is temporal and should be purged and cleaned.
+    // This is temporal and should be purged and cleaned. TMP
     if (config.network === 'localhost') {
       const tx = {
         // Required unless deploying a contract (in which case omit)
-        to: wallet.address,  // the target address or ENS name
-    
+        to: wallet.address, // the target address or ENS name
+
         // These are always optional (but for call, data is usually specified)
         // the amount (in wei) this transaction is sending
         value: ethers.utils.parseEther('1000')
       };
       const deployerWallet = getDeployerWallet();
       const txResponse = await deployerWallet.sendTransaction(tx);
-      console.log('txResponse: ', txResponse);
     }
-    
+
     await walletRepository.create(newWalletData);
     return newWalletData;
   }

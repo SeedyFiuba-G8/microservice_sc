@@ -27,10 +27,10 @@ module.exports = function $projectController(expressify, projectService, walletS
    * @returns {Promise}
    */
   async function fund(req, res) {
-    console.log('[LOG] Entering projectController.fund');
     const tx = await projectService.fund(
-      (await walletService.getWallet(req.body.walletId)), 
-      req.params.projectId, 
+      req.body.walletId,
+      await walletService.getWallet(req.body.walletId),
+      req.params.projectId,
       req.body.amount
     );
     return res.status(200).json(tx);

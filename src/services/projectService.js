@@ -18,6 +18,11 @@ module.exports = function $projectService(config, errors, logger, projectReposit
     return BigNumber(number).times(WEIS_IN_ETHER).toFixed();
   }
 
+  function fromWei(bigNumber) {
+    const WEIS_IN_ETHER = BigNumber(10).pow(18);
+    return bigNumber / WEIS_IN_ETHER;
+  }
+
   /**
    * Creates a new project
    *
@@ -31,8 +36,6 @@ module.exports = function $projectService(config, errors, logger, projectReposit
       .then((receipt) => {
         logger.info('Transaction mined');
         const firstEvent = receipt && receipt.events && receipt.events[0];
-        console.log('firstEvent: ', firstEvent);
-        console.log('receipt: ', receipt);
         if (firstEvent && firstEvent.event == 'ProjectCreated') {
           projectId = firstEvent.args.projectId.toNumber();
           logger.info(`Project created in tx ${tx.hash}`);
@@ -54,58 +57,69 @@ module.exports = function $projectService(config, errors, logger, projectReposit
     return tx.hash;
   }
 
-  async function fund(funderWallet, txHash, amount) {
-    const projectId = (await get(txHash)).projectId;
-    // Check project state === FUNDING. Check user has enough funds ?
-    // console.log('funderWallet getBalance: ', String((await funderWallet.getBalance())));
-    const seedyfiuba = await getContract(config, funderWallet);
-    console.log('Before fund');
-    const tx = await seedyfiuba.fund(projectId, { value: toWei(amount),  gasLimit: 100000});
-    console.log('Before tx wait');
-    tx.wait(1)
-      .then((receipt) => {
-        logger.info('Funding transaction mined');
-        const events = receipt && receipt.events;
-        console.log('Events: ', events);
+  async function fund(sponsorId, sponsorWallet, txHash, amount) {
+    const projectId = (await get(txHash)).projectId; // TMP
 
-        if (!events) {
+    async function validateFunding(wallet, projectId, amount) {
+      await projectRepository.assertProjectStatus(projectId, projectRepository.status.FUNDING);
+      if ((await wallet.getBalance()) < toWei(amount)) throw errors.create(400, 'Insuficient funds.');
+    }
+    function verifyProjectId(project, otherId) {
+      if (project !== otherId) {
+        logger.error(`Obtained projectId from transaction different: ${projectId} && ${otherId}`);
+        throw errors.UnknownError;
+      }
+    }
+
+    async function handleEvent(event, txHash) {
+      const handlersMap = {
+        ProjectFunded: async (event, txHash) => {
+          verifyProjectId(projectId, event.args.projectId.toNumber());
+
+          const received = fromWei(event.args.funds);
+
+          console.log('received:', received);
+
+          await projectRepository.fund(projectId, sponsorId, received, txHash);
+          logger.info(`Project funded in tx ${txHash}`);
+        },
+        ProjectStarted: async (event, txHash) => {
+          verifyProjectId(projectId, event.args.projectId.toNumber());
+
+          await projectRepository.setStatus(projectId, projectRepository.status.IN_PROGRESS);
+          logger.info(`Project funding completed. Project started in tx ${txHash}`);
+        }
+      };
+
+      if (!handlersMap[event.event]) {
+        logger.error(`Unexpected event ${txHash}, event name: ${event.event}`);
+        throw errors.UnknownError;
+      }
+      await handlersMap[event.event](event, txHash);
+    }
+
+    await validateFunding(sponsorWallet, projectId, amount);
+
+    console.log('Verified funding');
+
+    const seedyfiuba = await getContract(config, sponsorWallet);
+    const tx = await seedyfiuba.fund(projectId, { value: toWei(amount), gasLimit: 100000 });
+    tx.wait(1)
+      .then(async (receipt) => {
+        logger.info('Funding transaction mined');
+        if (!(receipt && receipt.events)) {
           logger.error(`Project ${projectId} not funded in tx ${tx.hash}`);
           throw errors.UnknownError;
         }
 
-        events.forEach((event) => {
-          switch (event.event) {
-            case 'ProjectFunded':
-              console.log('event args: ', event.args);
-              if (projectId !== event.args.projectId.toNumber()) {
-                logger.error(
-                  `Obtained projectId from transaction different: ${projectId} && ${event.args.projectId.toNumber()}`
-                );
-                throw errors.UnknownError;
-              }
-
-              logger.info(`Project funded in tx ${tx.hash}`);
-              break;
-            
-            case 'ProjectStarted':
-              if (projectId !== event.args.projectId.toNumber()) {
-                logger.error(
-                  `Obtained projectId from transaction different: ${projectId} && ${eventProjectId.toNumber()}`
-                );
-                throw errors.UnknownError;
-              }
-              logger.info(`Project funding completed. Project started in tx ${tx.hash}`);
-              break;
-
-            default:
-              logger.error(`Unexpected event ${tx.hash}`);
-              throw errors.UnknownError;
-          }
+        receipt.events.forEach(async (event) => {
+          await handleEvent(event, tx.hash);
         });
       })
       .then(async () => {
-        const project = (await seedyfiuba.projects(projectId))
-        console.log('Project: ', project, ' missingAmount: ', String(ethers.utils.fromWei(project.missingAmount)));
+        // TMP
+        const project = await seedyfiuba.projects(projectId);
+        console.log('Project: ', project, ' missingAmount:', fromWei(project.missingAmount));
       });
     return tx.hash;
   }
