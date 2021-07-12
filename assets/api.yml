@@ -357,7 +357,7 @@ components:
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/Wallet'
+            $ref: '#/components/schemas/WalletId'
 
     # STATUS
     health:
