@@ -1,6 +1,7 @@
 module.exports = function $projectController(expressify, projectService, walletService) {
   return expressify({
     create,
+    fund,
     get,
     getAll
   });
@@ -11,16 +12,21 @@ module.exports = function $projectController(expressify, projectService, walletS
    * @returns {Promise}
    */
   async function create(req, res) {
-    console.log('[LOG] entering projectController create');
     const tx = await projectService.create(
       walletService.getDeployerWallet(),
       req.body.stagesCost,
       (await walletService.getWalletData(req.body.ownerId)).address,
       (await walletService.getWalletData(req.body.reviewerId)).address
     );
-    console.log('[LOG] projectService returned tx: ', tx);
     return res.status(200).json(tx);
   }
+
+  /**
+   * Funds a new project and returns ?.
+   *
+   * @returns {Promise}
+   */
+  async function fund(req, res) {}
 
   /**
    * Gets the information of an existing project by its id
