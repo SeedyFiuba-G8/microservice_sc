@@ -17,7 +17,7 @@ module.exports = function $projectService(config, errors, logger, projectReposit
    */
   async function assertProjectStatus(currentStatus, status) {
     if (currentStatus !== status)
-      throw errors.create(400, `Project not in ${status} status. (current: ${project.currentStatus})`);
+      throw errors.create(400, `Project not in ${status} status. (current: ${currentStatus})`);
   }
 
   /**
@@ -43,6 +43,15 @@ module.exports = function $projectService(config, errors, logger, projectReposit
    */
   async function assertProjectReviewer(address, reviewerAdress) {
     if (address !== reviewerAdress) throw errors.create(400, 'Given reviewer adress is incorrect for project.');
+  }
+
+  /**
+   * Assert a Wallet's balance.
+   */
+  async function assertWalletBalance(wallet, amount) {
+    const balance = await wallet.getBalance();
+    if (balance.lt(toWei(amount)))
+      throw errors.create(400, `Insufficient funds. Funds available (${balance}) < funds requested (${toWei(amount)})`);
   }
 
   function getContract(config, wallet) {
@@ -99,12 +108,7 @@ module.exports = function $projectService(config, errors, logger, projectReposit
     async function validateFunding(wallet, projectId, amount) {
       const project = await _get(projectId);
       await assertProjectStatus(project.currentStatus, projectRepository.status.FUNDING);
-      const sponsorBalance = await wallet.getBalance();
-      if (sponsorBalance.lt(toWei(amount)))
-        throw errors.create(
-          400,
-          `Insufficient funds. Funds available (${sponsorBalance}) < funds requested (${toWei(amount)})`
-        );
+      await assertWalletBalance(sponsorWallet, amount);
     }
 
     async function handleEvent(event, txHash) {
@@ -185,14 +189,6 @@ module.exports = function $projectService(config, errors, logger, projectReposit
       const project = await _get(projectId);
       await assertProjectStatus(project.currentStatus, projectRepository.status.IN_PROGRESS);
       await assertProjectStage(project.currentStage, project.totalStages, completedStage);
-      console.log(
-        'Current stage: ',
-        project.currentStage,
-        ' Total:',
-        project.totalStages,
-        'Completed:',
-        completedStage
-      );
       await assertProjectReviewer(project.reviewerAddress, reviewerWallet.address);
     }
 

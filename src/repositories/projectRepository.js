@@ -3,7 +3,7 @@ const _ = require('lodash');
 const STATUS = {
   FUNDING: 'FUNDING',
   CANCELED: 'CANCELED',
-  IN_PROGRESS: 'INPROGRESS',
+  IN_PROGRESS: 'IN_PROGRESS',
   COMPLETED: 'COMPLETED'
 };
 

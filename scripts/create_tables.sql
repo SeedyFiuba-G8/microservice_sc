@@ -16,7 +16,7 @@ CREATE TABLE public.wallets (
 -- Create projects table
 
 DROP TYPE IF EXISTS  status_type;
-CREATE TYPE status_type AS ENUM ('FUNDING', 'CANCELED', 'INPROGRESS', 'COMPLETED');
+CREATE TYPE status_type AS ENUM ('FUNDING', 'CANCELED', 'IN_PROGRESS', 'COMPLETED');
 
 CREATE TABLE public.projects (
 	tx_hash				VARCHAR(128)	NOT NULL	PRIMARY KEY,
