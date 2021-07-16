@@ -3,7 +3,7 @@ const _ = require('lodash');
 const STATUS = {
   FUNDING: 'FUNDING',
   CANCELED: 'CANCELED',
-  IN_PROGRESS: 'IN_PROGRESS',
+  IN_PROGRESS: 'INPROGRESS',
   COMPLETED: 'COMPLETED'
 };
 
@@ -108,19 +108,9 @@ module.exports = function $projectRepository(dbUtils, errors, knex, logger) {
   async function update(projectId, updateFields) {
     logger.debug(`Updating fields: ${JSON.stringify(updateFields)} of: ${projectId}`);
 
-    const update_fields = dbUtils.mapToDb(updateFields);
-    console.log(update_fields);
-
-    const project_id = dbUtils.mapToDb({ projectId: String(projectId) });
-    console.log(project_id);
-
-    return knex('projects')
-      .update(update_fields)
-      .where(project_id)
-      .then((response) => {
-        console.log(response);
-        return dbUtils.mapFromDb(response);
-      })
+    return await knex('projects')
+      .update(dbUtils.mapToDb(updateFields))
+      .where(dbUtils.mapToDb({ projectId: projectId }))
       .catch((err) => {
         // TODO: handle errors.
         logger.error(err);

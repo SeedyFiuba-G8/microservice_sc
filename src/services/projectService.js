@@ -35,7 +35,7 @@ module.exports = function $projectService(config, errors, logger, projectReposit
    */
   async function assertProjectStage(currentStage, totalStages, completedStage) {
     if (currentStage > completedStage || completedStage > totalStages - 1)
-      throw errors.create(400, 'Invalid value for new stage.');
+      throw errors.create(400, 'Invalid completed stage value.');
   }
 
   /**
@@ -136,24 +136,17 @@ module.exports = function $projectService(config, errors, logger, projectReposit
 
     const seedyfiuba = await getContract(config, sponsorWallet);
     const tx = await seedyfiuba.fund(projectId, { value: toWei(amount), gasLimit: GAS_LIMIT });
-    tx.wait(1)
-      .then(async (receipt) => {
-        logger.info('Funding transaction mined');
-        if (!(receipt && receipt.events)) {
-          logger.error(`Project ${projectId} not funded in tx ${tx.hash}`);
-          throw errors.UnknownError;
-        }
+    tx.wait(1).then(async (receipt) => {
+      logger.info('Funding transaction mined');
+      if (!(receipt && receipt.events)) {
+        logger.error(`Project ${projectId} not funded in tx ${tx.hash}`);
+        throw errors.UnknownError;
+      }
 
-        receipt.events.forEach(async (event) => {
-          await handleEvent(event, tx.hash);
-        });
-      })
-      .then(async () => {
-        // TMP
-        const project = await seedyfiuba.projects(projectId);
-        console.log('Project:', project);
-        console.log('MissingAmount:', fromWei(project.missingAmount));
+      receipt.events.forEach(async (event) => {
+        await handleEvent(event, tx.hash);
       });
+    });
     return tx.hash;
   }
 
@@ -192,49 +185,52 @@ module.exports = function $projectService(config, errors, logger, projectReposit
       const project = await _get(projectId);
       await assertProjectStatus(project.currentStatus, projectRepository.status.IN_PROGRESS);
       await assertProjectStage(project.currentStage, project.totalStages, completedStage);
-      await assertProjectReviewer(project.reviewerAdress, reviewerWallet.adress);
+      console.log(
+        'Current stage: ',
+        project.currentStage,
+        ' Total:',
+        project.totalStages,
+        'Completed:',
+        completedStage
+      );
+      await assertProjectReviewer(project.reviewerAddress, reviewerWallet.address);
     }
 
-    async function handleEvent(event) {
+    async function handleEvent(event, projectId) {
       const handlers = {
         StageCompleted: async (event) => {
           logger.info('Stage completed!');
-          const projectId = event.args.projectId;
-          const completedStage = event.args.completedStage;
+          const projectId = event.args.projectId.toNumber();
+          const completedStage = event.args.stageCompleted.toNumber();
 
           projectRepository.update(projectId, { currentStage: completedStage + 1 });
         },
         ProjectCompleted: async (event) => {
           logger.info('Project completed!');
-          const projectId = event.args.projectId;
+          const projectId = event.args.projectId.toNumber();
 
           projectRepository.update(projectId, { currentStatus: projectRepository.status.COMPLETED });
         }
       };
+
+      handlers[event.event](event, projectId);
     }
 
     await validateStageCompletion(projectId, reviewerWallet, completedStage);
 
     const seedyfiuba = await getContract(config, reviewerWallet);
-    const tx = await seedyfiuba.setCompletedStage(projectId, completedStage);
-    tx.wait(1)
-      .then((receipt) => {
-        logger.info('SetCompletedStage transaction mined.');
-        if (!(receipt && receipt.events)) {
-          logger.error(`Project ${projectId} didn't advance stage in tx ${tx.hash}`);
-          throw errors.UnknownError;
-        }
+    const tx = await seedyfiuba.setCompletedStage(projectId, completedStage, { gasLimit: GAS_LIMIT });
+    tx.wait(1).then((receipt) => {
+      logger.info('SetCompletedStage transaction mined.');
+      if (!(receipt && receipt.events)) {
+        logger.error(`Project ${projectId} didn't complete stage in tx ${tx.hash}`);
+        throw errors.UnknownError;
+      }
 
-        receipt.events.forEach(async (event) => {
-          await handleEvent(event, projectId);
-        });
-      })
-      .then(async () => {
-        // TMP
-        const project = await seedyfiuba.projects(projectId);
-        console.log('Project:', project);
-        console.log('MissingAmount:', fromWei(project.missingAmount));
+      receipt.events.forEach(async (event) => {
+        await handleEvent(event, projectId);
       });
+    });
     return tx.hash;
   }
 };
