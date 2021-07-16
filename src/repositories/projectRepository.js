@@ -106,8 +106,6 @@ module.exports = function $projectRepository(dbUtils, errors, knex, logger) {
    * @returns {Promise}
    */
   async function update(projectId, updateFields) {
-    logger.debug(`Updating fields: ${JSON.stringify(updateFields)} of: ${projectId}`);
-
     return await knex('projects')
       .update(dbUtils.mapToDb(updateFields))
       .where(dbUtils.mapToDb({ projectId: projectId }))

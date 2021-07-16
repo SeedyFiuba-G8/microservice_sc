@@ -17,7 +17,7 @@ module.exports = function $projectService(config, errors, logger, projectReposit
    */
   async function assertProjectStatus(currentStatus, status) {
     if (currentStatus !== status)
-      throw errors.create(400, `Project not in ${status} status. (current: ${currentStatus})`);
+      throw errors.create(400, `Project not in ${status} status. (currently: ${currentStatus})`);
   }
 
   /**
@@ -69,89 +69,102 @@ module.exports = function $projectService(config, errors, logger, projectReposit
   }
 
   /**
+   * Generic action for acting con SeedifyUba Smart Contract.
+   *
+   * @returns {Promise}
+   */
+  async function action(contractCaller, transaction, handlers) {
+    const seedifyuba = getContract(config, contractCaller);
+    const tx = await transaction(seedifyuba);
+
+    async function handleEvent(event, txHash) {
+      if (!handlers[event.event]) {
+        logger.error(`Unexpected event ${txHash}, event name: ${event.event}`);
+        throw errors.UnknownError;
+      }
+
+      await handlers[event.event](event, txHash);
+    }
+
+    tx.wait(1)
+      .then((receipt) => {
+        logger.info('Transaction mined');
+        if (!(receipt && receipt.events)) {
+          logger.error('Transaction error');
+          throw errors.UnknownError;
+        }
+
+        receipt.events.forEach(async (event) => {
+          await handleEvent(event, tx.hash);
+        });
+      })
+      .catch((err) => {
+        logger.error('Unhandled exception during transaction');
+        throw errors.UnknownError;
+      });
+
+    return tx.hash;
+  }
+
+  /**
    * Creates a new project
    *
    * @returns {Promise} uuid
    */
   async function create(deployerWallet, stagesCost, projectOwnerAddress, projectReviewerAddress) {
-    let projectId;
-    const seedyfiuba = await getContract(config, deployerWallet);
-    const tx = await seedyfiuba.createProject(stagesCost.map(toWei), projectOwnerAddress, projectReviewerAddress);
-    tx.wait(1)
-      .then((receipt) => {
-        logger.info('CreateProject transaction mined');
-        const firstEvent = receipt && receipt.events && receipt.events[0];
-        if (firstEvent && firstEvent.event == 'ProjectCreated') {
-          projectId = firstEvent.args.projectId.toNumber();
-          logger.info(`Project created in tx ${tx.hash}`);
-        } else {
-          logger.error(`Project not created in tx ${tx.hash}`);
-          throw errors.UnknownError;
-        }
-      })
-      .then(
-        async () =>
-          await projectRepository.create({
-            hash: tx.hash,
-            projectId,
-            stagesCost,
-            projectOwnerAddress,
-            projectReviewerAddress
-          })
-      );
-    return tx.hash;
+    const transaction = (seedyfiuba) => {
+      return seedyfiuba.createProject(stagesCost.map(toWei), projectOwnerAddress, projectReviewerAddress);
+    };
+
+    const handlers = {
+      ProjectCreated: async (event, txHash) => {
+        projectId = event.args.projectId.toNumber();
+        await projectRepository.create({
+          hash: txHash,
+          projectId,
+          stagesCost,
+          projectOwnerAddress,
+          projectReviewerAddress
+        });
+      }
+    };
+
+    return action(deployerWallet, transaction, handlers);
   }
 
   async function fund(sponsorId, sponsorWallet, txHash, amount) {
-    const projectId = (await get(txHash)).projectId; // TMP
+    const project = await get(txHash);
+    const projectId = project.projectId; // TMP
 
     async function validateFunding(wallet, projectId, amount) {
-      const project = await _get(projectId);
       await assertProjectStatus(project.currentStatus, projectRepository.status.FUNDING);
       await assertWalletBalance(sponsorWallet, amount);
     }
 
-    async function handleEvent(event, txHash) {
-      const handlersMap = {
-        ProjectFunded: async (event, txHash) => {
-          assertProjectId(projectId, event.args.projectId.toNumber());
-
-          const received = fromWei(event.args.funds);
-
-          await projectRepository.fund(projectId, sponsorId, received, txHash);
-          logger.info(`Project funded in tx ${txHash}`);
-        },
-        ProjectStarted: async (event, txHash) => {
-          assertProjectId(projectId, event.args.projectId.toNumber());
-
-          await projectRepository.update(projectId, { currentStatus: projectRepository.status.IN_PROGRESS });
-          logger.info(`Project funding completed. Project started in tx ${txHash}`);
-        }
-      };
-
-      if (!handlersMap[event.event]) {
-        logger.error(`Unexpected event ${txHash}, event name: ${event.event}`);
-        throw errors.UnknownError;
-      }
-      await handlersMap[event.event](event, txHash);
-    }
-
     await validateFunding(sponsorWallet, projectId, amount);
 
-    const seedyfiuba = await getContract(config, sponsorWallet);
-    const tx = await seedyfiuba.fund(projectId, { value: toWei(amount), gasLimit: GAS_LIMIT });
-    tx.wait(1).then(async (receipt) => {
-      logger.info('Funding transaction mined');
-      if (!(receipt && receipt.events)) {
-        logger.error(`Project ${projectId} not funded in tx ${tx.hash}`);
-        throw errors.UnknownError;
-      }
+    const transaction = (seedyfiuba) => {
+      return seedyfiuba.fund(projectId, { value: toWei(amount), gasLimit: GAS_LIMIT });
+    };
 
-      receipt.events.forEach(async (event) => {
-        await handleEvent(event, tx.hash);
-      });
-    });
-    return tx.hash;
+    const handlers = {
+      ProjectFunded: async (event, txHash) => {
+        assertProjectId(projectId, event.args.projectId.toNumber());
+
+        const received = fromWei(event.args.funds);
+
+        await projectRepository.fund(projectId, sponsorId, received, txHash);
+        logger.info(`Project funded in tx ${txHash}`);
+      },
+      ProjectStarted: async (event, txHash) => {
+        assertProjectId(projectId, event.args.projectId.toNumber());
+
+        await projectRepository.update(projectId, { currentStatus: projectRepository.status.IN_PROGRESS });
+        logger.info(`Project funding completed. Project started in tx ${txHash}`);
+      }
+    };
+
+    return action(sponsorWallet, transaction, handlers);
   }
 
   async function get(txHash) {
@@ -183,50 +196,37 @@ module.exports = function $projectService(config, errors, logger, projectReposit
   }
 
   async function setCompletedStage(txHash, reviewerWallet, completedStage) {
-    const projectId = (await get(txHash)).projectId; // TMP
+    const project = await get(txHash);
+    const projectId = project.projectId; // TMP
 
-    async function validateStageCompletion(projectId, reviewerWallet, completedStage) {
-      const project = await _get(projectId);
+    async function validateStageCompletion(project, reviewerWallet, completedStage) {
       await assertProjectStatus(project.currentStatus, projectRepository.status.IN_PROGRESS);
       await assertProjectStage(project.currentStage, project.totalStages, completedStage);
       await assertProjectReviewer(project.reviewerAddress, reviewerWallet.address);
     }
 
-    async function handleEvent(event, projectId) {
-      const handlers = {
-        StageCompleted: async (event) => {
-          logger.info('Stage completed!');
-          const projectId = event.args.projectId.toNumber();
-          const completedStage = event.args.stageCompleted.toNumber();
+    await validateStageCompletion(project, reviewerWallet, completedStage);
 
-          projectRepository.update(projectId, { currentStage: completedStage + 1 });
-        },
-        ProjectCompleted: async (event) => {
-          logger.info('Project completed!');
-          const projectId = event.args.projectId.toNumber();
+    const transaction = (seedyfiuba) => {
+      return seedyfiuba.setCompletedStage(projectId, completedStage, { gasLimit: GAS_LIMIT });
+    };
 
-          projectRepository.update(projectId, { currentStatus: projectRepository.status.COMPLETED });
-        }
-      };
+    const handlers = {
+      StageCompleted: async (event) => {
+        logger.info('Stage completed!');
+        const projectId = event.args.projectId.toNumber();
+        const completedStage = event.args.stageCompleted.toNumber();
 
-      handlers[event.event](event, projectId);
-    }
+        projectRepository.update(projectId, { currentStage: completedStage + 1 });
+      },
+      ProjectCompleted: async (event) => {
+        logger.info('Project completed!');
+        const projectId = event.args.projectId.toNumber();
 
-    await validateStageCompletion(projectId, reviewerWallet, completedStage);
-
-    const seedyfiuba = await getContract(config, reviewerWallet);
-    const tx = await seedyfiuba.setCompletedStage(projectId, completedStage, { gasLimit: GAS_LIMIT });
-    tx.wait(1).then((receipt) => {
-      logger.info('SetCompletedStage transaction mined.');
-      if (!(receipt && receipt.events)) {
-        logger.error(`Project ${projectId} didn't complete stage in tx ${tx.hash}`);
-        throw errors.UnknownError;
+        projectRepository.update(projectId, { currentStatus: projectRepository.status.COMPLETED });
       }
+    };
 
-      receipt.events.forEach(async (event) => {
-        await handleEvent(event, projectId);
-      });
-    });
-    return tx.hash;
+    return action(reviewerWallet, transaction, handlers);
   }
 };
