@@ -59,6 +59,8 @@ paths:
           $ref: '#/components/responses/postProject'
         400:
           $ref: '#/components/responses/400'
+        404:
+          $ref: '#/components/responses/404'
         415:
           $ref: '#/components/responses/415'
         500:
@@ -130,7 +132,7 @@ paths:
       requestBody:
         $ref: '#/components/requestBodies/postFund'
       responses:
-        201:
+        200:
           $ref: '#/components/responses/postFund'
         400:
           $ref: '#/components/responses/400'
@@ -333,7 +335,7 @@ components:
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/Transaction'
+            $ref: '#/components/schemas/TxHash'
 
     # WALLETS
     getWallet:
@@ -355,7 +357,7 @@ components:
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/Wallet'
+            $ref: '#/components/schemas/WalletId'
 
     # STATUS
     health:
@@ -378,26 +380,21 @@ components:
     Error:
       type: object
       properties:
-        error:
-          type: object
-          properties:
-            status:
-              type: integer
-            name:
-              type: string
-            message:
-              type: string
-            errors:
-              type: object
-            data:
-              type: object
-          required:
-            - status
-            - name
+        status:
+          type: integer
+        name:
+          type: string
+        message:
+          type: string
+        errors:
+          type: array
+          items:
+            type: object
       required:
-        - error
+        - status
+        - name
 
-        # TYPES
+    # TYPES
 
     # Date:
     #   type: string
@@ -443,6 +440,9 @@ components:
       minItems: 1
       example: [1, 2.3, 3]
 
+    ETHAmount:
+      type: number
+
     # PROJECTS
     Project:
       type: object
@@ -459,6 +459,8 @@ components:
           $ref: '#/components/schemas/Status'
         totalStages:
           $ref: '#/components/schemas/Stage'
+        totalFunded:
+          $ref: '#/components/schemas/ETHAmount'
         stagesCost:
           $ref: '#/components/schemas/StagesCost'
 
@@ -469,6 +471,7 @@ components:
         - reviewerAddress
         - currentStatus
         - totalStages
+        - totalFunded
         - stagesCost
 
     Projects:
@@ -493,10 +496,13 @@ components:
     PatchProjectData:
       type: object
       properties:
-        nextStage:
+        reviewerId:
+          $ref: '#/components/schemas/WalletId'
+        completedStage:
           $ref: '#/components/schemas/Stage'
       required:
-        - nextStage
+        - reviewerId
+        - completedStage
 
     # WALLETS
     Wallet:
@@ -536,7 +542,7 @@ components:
         walletId:
           $ref: '#/components/schemas/WalletId'
         amount:
-          type: number
+          $ref: '#/components/schemas/ETHAmount'
       required:
         - walletId
         - amount

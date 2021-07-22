@@ -14,6 +14,8 @@ module.exports = function apiRouter(apiValidatorMiddleware, projectController, s
       .get('/projects', projectController.getAll)
       .post('/projects', projectController.create)
       .get('/projects/:projectId', projectController.get)
+      .patch('/projects/:projectId', projectController.patch)
+      .post('/projects/:projectId/funds', projectController.fund)
 
       // WALLETS
       .post('/wallets', walletController.create)
@@ -23,14 +25,5 @@ module.exports = function apiRouter(apiValidatorMiddleware, projectController, s
       // STATUS
       .get('/ping', statusController.ping)
       .get('/health', statusController.health)
-
-    // ROUTES
-
-    // Projects
-    // .get('/projects', projectController.getBy)
-    // .post('/projects', projectController.create)
-    // .get('/projects/:projectId', projectController.get)
-    // .patch('/projects/:projectId', projectController.modify)
-    // .delete('/projects/:projectId', projectController.remove)
   );
 };

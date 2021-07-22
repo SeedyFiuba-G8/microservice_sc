@@ -1,6 +1,6 @@
 const ethers = require('ethers');
 
-module.exports = function $walletService(config, walletRepository) {
+module.exports = function $walletService(config, errors, walletRepository) {
   return {
     createWallet,
     getDeployerWallet,
@@ -21,9 +21,23 @@ module.exports = function $walletService(config, walletRepository) {
       address: wallet.address,
       privateKey: wallet.privateKey
     };
+    // This is temporal and should be purged and cleaned. TMP
+    if (config.network === 'localhost') {
+      const tx = {
+        // Required unless deploying a contract (in which case omit)
+        to: wallet.address, // the target address or ENS name
+
+        // These are always optional (but for call, data is usually specified)
+        // the amount (in wei) this transaction is sending
+        value: ethers.utils.parseEther('1000')
+      };
+
+      const deployerWallet = getDeployerWallet();
+      const txResponse = await deployerWallet.sendTransaction(tx);
+    }
 
     await walletRepository.create(newWalletData);
-    return newWalletData;
+    return newWalletData.walletId;
   }
 
   async function getWalletsData() {
@@ -42,7 +56,7 @@ module.exports = function $walletService(config, walletRepository) {
   }
 
   async function getWallet(walletId) {
-    const walletData = getWalletData(walletId);
+    const walletData = await getWalletData(walletId);
     return new ethers.Wallet(walletData.privateKey, config.provider);
   }
 };

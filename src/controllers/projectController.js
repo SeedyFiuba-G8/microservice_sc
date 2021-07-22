@@ -1,24 +1,39 @@
 module.exports = function $projectController(expressify, projectService, walletService) {
   return expressify({
     create,
+    fund,
     get,
-    getAll
+    getAll,
+    patch
   });
 
   /**
-   * Creates a new project and returns the transaction associated.
+   * Creates a new project and returns the tx hash associated.
    *
    * @returns {Promise}
    */
   async function create(req, res) {
-    console.log('[LOG] entering projectController create');
     const tx = await projectService.create(
       walletService.getDeployerWallet(),
       req.body.stagesCost,
       (await walletService.getWalletData(req.body.ownerId)).address,
       (await walletService.getWalletData(req.body.reviewerId)).address
     );
-    console.log('[LOG] projectService returned tx: ', tx);
+    return res.status(200).json(tx);
+  }
+
+  /**
+   * Funds a new project and returns the funding tx hash associated.
+   *
+   * @returns {Promise}
+   */
+  async function fund(req, res) {
+    const tx = await projectService.fund(
+      req.body.walletId,
+      await walletService.getWallet(req.body.walletId),
+      req.params.projectId,
+      req.body.amount
+    );
     return res.status(200).json(tx);
   }
 
@@ -40,5 +55,19 @@ module.exports = function $projectController(expressify, projectService, walletS
   async function getAll(req, res) {
     const projectsList = await projectService.getAll();
     return res.status(200).json(projectsList);
+  }
+
+  /**
+   * Advance the stage of a project
+   *
+   * @returns
+   */
+  async function patch(req, res) {
+    const tx = await projectService.setCompletedStage(
+      req.params.projectId,
+      await walletService.getWallet(req.body.reviewerId),
+      req.body.completedStage
+    );
+    return res.status(200).json(tx);
   }
 };

@@ -1,5 +1,6 @@
 -- Drop existing tables
 
+DROP TABLE IF EXISTS public.records;
 DROP TABLE IF EXISTS public.stages_cost;
 DROP TABLE IF EXISTS public.projects;
 DROP TABLE IF EXISTS public.wallets;
@@ -32,4 +33,12 @@ CREATE TABLE public.stages_cost (
 	stage				INTEGER			NOT NULL	DEFAULT 0,
 	cost				NUMERIC			NOT NULL,
 	PRIMARY KEY (project_id, stage)
+);
+
+CREATE TABLE public.records (
+	wallet_id			VARCHAR(36)		NOT NULL 	REFERENCES public.wallets (wallet_id) ON DELETE RESTRICT,
+	project_id			INTEGER			NOT NULL	REFERENCES public.projects (project_id) ON DELETE RESTRICT,
+	amount				NUMERIC			NOT NULL,
+	tx_hash				VARCHAR(128)	NOT NULL	UNIQUE,
+	PRIMARY KEY (wallet_id, project_id, tx_hash)
 );

@@ -1,9 +1,19 @@
 const _ = require('lodash');
 
+const STATUS = {
+  FUNDING: 'FUNDING',
+  CANCELED: 'CANCELED',
+  IN_PROGRESS: 'IN_PROGRESS',
+  COMPLETED: 'COMPLETED'
+};
+
 module.exports = function $projectRepository(dbUtils, errors, knex, logger) {
   return {
     create,
-    get
+    get,
+    update,
+    fund,
+    status: STATUS
   };
 
   /**
@@ -37,7 +47,7 @@ module.exports = function $projectRepository(dbUtils, errors, knex, logger) {
       };
       return stageCost;
     });
-    console.log(`Stages: ${JSON.stringify(stagesList)}`);
+
     await knex('stages_cost')
       .insert(dbUtils.mapToDb(stagesList))
       .catch((err) => {
@@ -65,26 +75,63 @@ module.exports = function $projectRepository(dbUtils, errors, knex, logger) {
 
     const projects = await projectQuery.then(dbUtils.mapFromDb);
     const ids = projects.map((project) => project.projectId);
-
-    console.log('ids: ', ids);
-
     const stagesQuery = knex('stages_cost').whereIn('project_id', ids).orderBy('stage', 'asc');
-
     const stages = await stagesQuery.then(dbUtils.mapFromDb);
 
-    console.log('stages: ', stages);
+    const fundsQuery = knex('records').whereIn('project_id', ids);
+    const funds = await fundsQuery.then(dbUtils.mapFromDb);
 
     projects.forEach((project) => {
+      // Add stages cost
       project.stagesCost = stages
         .filter((stage) => stage.projectId === project.projectId)
         .map((stage) => {
-          return stage.cost;
+          return Number(stage.cost);
         });
+
+      // Add total funds
+      project.totalFunded = _.sumBy(
+        funds.filter((fund) => project.projectId === fund.projectId),
+        (fund) => Number(fund.amount)
+      );
       return project;
     });
 
-    console.log('projects after adding stages: ', projects);
-
     return projects;
+  }
+
+  /**
+   * Set a project as Started.
+   *
+   * @returns {Promise}
+   */
+  async function update(projectId, updateFields) {
+    logger.debug(`Updating fields: ${JSON.stringify(updateFields)} of: ${projectId}`);
+
+    return await knex('projects')
+      .update(dbUtils.mapToDb(updateFields))
+      .where(dbUtils.mapToDb({ projectId: projectId }))
+      .catch((err) => {
+        // TODO: handle errors.
+        logger.error(err);
+        throw errors.UnknownError;
+      });
+  }
+
+  /**
+   * Set record for funding of a project.
+   *
+   * @returns {Promise}
+   */
+  async function fund(projectId, walletId, amount, txHash) {
+    logger.info(`Funding project: ${projectId} by: ${walletId} with amount: ${amount}`);
+
+    return await knex('records')
+      .insert(dbUtils.mapToDb({ walletId, projectId, amount, txHash }))
+      .catch((err) => {
+        // TODO: handle errors.
+        logger.error(err);
+        throw errors.UnknownError;
+      });
   }
 };
