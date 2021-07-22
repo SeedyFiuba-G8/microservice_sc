@@ -1,6 +1,6 @@
 const ethers = require('ethers');
 
-module.exports = function $walletService(config, errors, walletRepository) {
+module.exports = function $walletService(config, conversionUtils, errors, walletRepository) {
   return {
     createWallet,
     getDeployerWallet,
@@ -42,17 +42,35 @@ module.exports = function $walletService(config, errors, walletRepository) {
 
   async function getWalletsData() {
     const wallets = await walletRepository.get();
+    const balances = await Promise.all(
+      wallets.map(async (walletData) => (walletData.balance = await getBalance(walletData)))
+    );
+    console.log('balances: ', balances);
     return wallets;
   }
 
   async function getWalletData(walletId) {
-    const walletData = await walletRepository.get({
-      filters: {
-        walletId
-      }
-    });
-    if (!walletData.length) throw errors.create(404, 'No wallet found with specified id.');
-    return walletData[0];
+    const walletData = (
+      await walletRepository.get({
+        filters: {
+          walletId
+        }
+      })
+    )[0];
+    if (!walletData) throw errors.create(404, 'No wallet found with specified id.');
+    walletData.balance = await getBalance(walletData);
+    return walletData;
+  }
+
+  /**
+   * Gets the balance of a wallet
+   *
+   * @param {Object} walletData
+   * @returns {number} wallet's balance in eths
+   */
+  async function getBalance(walletData) {
+    const wallet = new ethers.Wallet(walletData.privateKey, config.provider);
+    return conversionUtils.fromWei(await wallet.getBalance());
   }
 
   async function getWallet(walletId) {

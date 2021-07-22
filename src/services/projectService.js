@@ -1,9 +1,8 @@
-const BigNumber = require('bignumber.js');
 const ethers = require('ethers');
 
 const GAS_LIMIT = 100000;
 
-module.exports = function $projectService(config, errors, logger, projectRepository) {
+module.exports = function $projectService(config, conversionUtils, errors, logger, projectRepository) {
   return {
     create,
     fund,
@@ -50,22 +49,15 @@ module.exports = function $projectService(config, errors, logger, projectReposit
    */
   async function assertWalletBalance(wallet, amount) {
     const balance = await wallet.getBalance();
-    if (balance.lt(toWei(amount)))
-      throw errors.create(400, `Insufficient funds. Funds available (${balance}) < funds requested (${toWei(amount)})`);
+    if (balance.lt(conversionUtils.toWei(amount)))
+      throw errors.create(
+        400,
+        `Insufficient funds. Funds available (${balance}) < funds requested (${conversionUtils.toWei(amount)})`
+      );
   }
 
   function getContract(config, wallet) {
     return new ethers.Contract(config.contractAddress, config.contractAbi, wallet);
-  }
-
-  function toWei(number) {
-    const WEIS_IN_ETHER = BigNumber(10).pow(18);
-    return BigNumber(number).times(WEIS_IN_ETHER).toFixed();
-  }
-
-  function fromWei(bigNumber) {
-    const WEIS_IN_ETHER = BigNumber(10).pow(18);
-    return bigNumber / WEIS_IN_ETHER;
   }
 
   /**
@@ -76,7 +68,11 @@ module.exports = function $projectService(config, errors, logger, projectReposit
   async function create(deployerWallet, stagesCost, projectOwnerAddress, projectReviewerAddress) {
     let projectId;
     const seedyfiuba = await getContract(config, deployerWallet);
-    const tx = await seedyfiuba.createProject(stagesCost.map(toWei), projectOwnerAddress, projectReviewerAddress);
+    const tx = await seedyfiuba.createProject(
+      stagesCost.map(conversionUtils.toWei),
+      projectOwnerAddress,
+      projectReviewerAddress
+    );
     tx.wait(1)
       .then((receipt) => {
         logger.info('CreateProject transaction mined');
@@ -116,7 +112,7 @@ module.exports = function $projectService(config, errors, logger, projectReposit
         ProjectFunded: async (event, txHash) => {
           assertProjectId(projectId, event.args.projectId.toNumber());
 
-          const received = fromWei(event.args.funds);
+          const received = conversionUtils.fromWei(event.args.funds);
 
           await projectRepository.fund(projectId, sponsorId, received, txHash);
           logger.info(`Project funded in tx ${txHash}`);
@@ -139,7 +135,7 @@ module.exports = function $projectService(config, errors, logger, projectReposit
     await validateFunding(sponsorWallet, projectId, amount);
 
     const seedyfiuba = await getContract(config, sponsorWallet);
-    const tx = await seedyfiuba.fund(projectId, { value: toWei(amount), gasLimit: GAS_LIMIT });
+    const tx = await seedyfiuba.fund(projectId, { value: conversionUtils.toWei(amount), gasLimit: GAS_LIMIT });
     tx.wait(1).then(async (receipt) => {
       logger.info('Funding transaction mined');
       if (!(receipt && receipt.events)) {

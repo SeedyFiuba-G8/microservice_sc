@@ -442,6 +442,7 @@ components:
 
     ETHAmount:
       type: number
+      example: 0.000001
 
     # PROJECTS
     Project:
@@ -512,12 +513,12 @@ components:
           $ref: '#/components/schemas/Address'
         walletId:
           $ref: '#/components/schemas/WalletId'
-        privateKey:
-          $ref: '#/components/schemas/Key'
+        balance:
+          $ref: '#/components/schemas/ETHAmount'
       required:
         - address
         - walletId
-        - privateKey
+        - balance
 
     Wallets:
       type: array

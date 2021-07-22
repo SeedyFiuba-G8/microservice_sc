@@ -7,7 +7,7 @@ const loggingComponents = require('@seedyfiuba/logging_components');
 
 function createContainer() {
   const container = dependable.container();
-  const entries = ['app.js', 'controllers', 'middlewares', 'repositories', 'routers', 'services'];
+  const entries = ['app.js', 'controllers', 'middlewares', 'repositories', 'routers', 'utils', 'services'];
   const apiPath = path.join(__dirname, '../assets/api.yml');
 
   container.register('apiValidatorMiddleware', function $apiValidatorMiddleware() {
