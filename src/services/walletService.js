@@ -37,7 +37,7 @@ module.exports = function $walletService(config, conversionUtils, errors, wallet
     }
 
     await walletRepository.create(newWalletData);
-    return newWalletData.walletId;
+    return newWalletData;
   }
 
   async function getWalletsData() {

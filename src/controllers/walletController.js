@@ -16,8 +16,8 @@ module.exports = function $walletController(expressify, walletService) {
    * @returns {Promise}
    */
   async function create(req, res) {
-    const newWalletId = await walletService.createWallet(uuidv4());
-    return res.status(201).json(newWalletId);
+    const newWalletData = await walletService.createWallet(uuidv4());
+    return res.status(201).json(_.omit(newWalletData, sensitiveValues));
   }
 
   /**

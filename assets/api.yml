@@ -357,7 +357,7 @@ components:
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/WalletId'
+            $ref: '#/components/schemas/PostWallet'
 
     # STATUS
     health:
@@ -504,6 +504,14 @@ components:
       required:
         - reviewerId
         - completedStage
+
+    PostWallet:
+      type: object
+      properties:
+        address:
+          $ref: '#/components/schemas/Address'
+        walletId:
+          $ref: '#/components/schemas/WalletId'
 
     # WALLETS
     Wallet:
