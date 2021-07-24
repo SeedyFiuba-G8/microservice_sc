@@ -18,3 +18,4 @@ config/
 .solcover.js
 coverage.json
 tsconfig.json
+newrelic.js
