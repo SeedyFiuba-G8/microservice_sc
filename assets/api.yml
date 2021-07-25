@@ -436,9 +436,8 @@ components:
     StagesCost:
       type: array
       items:
-        type: number
+        $ref: '#/components/schemas/ETHAmount'
       minItems: 1
-      example: [1, 2.3, 3]
 
     ETHAmount:
       type: number
@@ -458,6 +457,8 @@ components:
           $ref: '#/components/schemas/Address'
         currentStatus:
           $ref: '#/components/schemas/Status'
+        currentStage:
+          $ref: '#/components/schemas/Stage'
         totalStages:
           $ref: '#/components/schemas/Stage'
         totalFunded:
@@ -471,6 +472,7 @@ components:
         - ownerAddress
         - reviewerAddress
         - currentStatus
+        - currentStage
         - totalStages
         - totalFunded
         - stagesCost
