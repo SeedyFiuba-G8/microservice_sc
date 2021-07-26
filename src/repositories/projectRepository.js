@@ -13,6 +13,7 @@ module.exports = function $projectRepository(dbUtils, errors, knex, logger) {
     get,
     update,
     fund,
+    getFundings,
     status: STATUS
   };
 
@@ -34,8 +35,6 @@ module.exports = function $projectRepository(dbUtils, errors, knex, logger) {
       )
       .catch((err) => {
         if (err.code === '23505') throw errors.create(409, 'Project already exists.');
-        // TODO: HANDLE ERRORS
-
         logger.error(err);
         throw errors.UnknownError;
       });
@@ -51,8 +50,6 @@ module.exports = function $projectRepository(dbUtils, errors, knex, logger) {
     await knex('stages_cost')
       .insert(dbUtils.mapToDb(stagesList))
       .catch((err) => {
-        // TODO: HANDLE ERRORS
-
         logger.error(err);
         throw errors.UnknownError;
       });
@@ -100,6 +97,25 @@ module.exports = function $projectRepository(dbUtils, errors, knex, logger) {
     return projects;
   }
 
+  async function getFundings({ select, filters = {}, limit, offset } = {}) {
+    const fundingsQuery = knex('records')
+      .select(_.isArray(select) ? dbUtils.mapToDb(select) : '*')
+      .where(dbUtils.mapToDb(filters))
+      .orderBy('date', 'desc');
+
+    if (limit) fundingsQuery.limit(limit);
+    if (offset) fundingsQuery.offset(offset);
+
+    const fundings = (await fundingsQuery.then(dbUtils.mapFromDb)).map(async (funding) => ({
+      ...funding,
+      date: funding.date.toISOString(),
+      projectId: await getProjectTxHash(funding.projectId),
+      amount: Number(funding.amount)
+    }));
+
+    return Promise.all(fundings);
+  }
+
   /**
    * Set a project as Started.
    *
@@ -110,9 +126,8 @@ module.exports = function $projectRepository(dbUtils, errors, knex, logger) {
 
     return await knex('projects')
       .update(dbUtils.mapToDb(updateFields))
-      .where(dbUtils.mapToDb({ projectId: projectId }))
+      .where(dbUtils.mapToDb({ projectId }))
       .catch((err) => {
-        // TODO: handle errors.
         logger.error(err);
         throw errors.UnknownError;
       });
@@ -129,9 +144,14 @@ module.exports = function $projectRepository(dbUtils, errors, knex, logger) {
     return await knex('records')
       .insert(dbUtils.mapToDb({ walletId, projectId, amount, txHash }))
       .catch((err) => {
-        // TODO: handle errors.
         logger.error(err);
         throw errors.UnknownError;
       });
+  }
+
+  async function getProjectTxHash(projectId) {
+    const project = await knex('projects').where(dbUtils.mapToDb({ projectId })).then(dbUtils.mapFromDb);
+    if (!project.length) throw errors.create(404, `Project with id: ${projectId} not found in sc database.`);
+    return project[0].txHash;
   }
 };

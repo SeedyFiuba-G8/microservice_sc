@@ -18,6 +18,8 @@ module.exports = function apiRouter(apiValidatorMiddleware, projectController, s
       .post('/projects/:projectId/funds', projectController.fund)
 
       // WALLETS
+      .get('/wallets/:walletId/fundings', walletController.getFundings)
+      .get('/wallets/fundings', walletController.getAllFundings)
       .post('/wallets', walletController.create)
       .get('/wallets', walletController.getAll)
       .get('/wallets/:walletId', walletController.get)

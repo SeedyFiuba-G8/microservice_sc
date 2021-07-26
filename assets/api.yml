@@ -23,10 +23,6 @@ servers:
 tags:
   - name: Projects
   - name: Wallets
-  - name: Reviewer
-  - name: Sponsor
-  - name: Entrepeneur
-  - name: Funding
 
 # =============================================================================
 
@@ -41,12 +37,8 @@ paths:
       responses:
         200:
           $ref: '#/components/responses/getAllProjects'
-        400:
-          $ref: '#/components/responses/400'
-        415:
-          $ref: '#/components/responses/415'
-        500:
-          $ref: '#/components/responses/500'
+        default:
+          $ref: '#/components/responses/Error'
     post:
       summary: Create a new project
       description: Allows a user to create a new project.
@@ -57,14 +49,8 @@ paths:
       responses:
         200:
           $ref: '#/components/responses/postProject'
-        400:
-          $ref: '#/components/responses/400'
-        404:
-          $ref: '#/components/responses/404'
-        415:
-          $ref: '#/components/responses/415'
-        500:
-          $ref: '#/components/responses/500'
+        default:
+          $ref: '#/components/responses/Error'
 
   /projects/{projectId}:
     get:
@@ -76,24 +62,19 @@ paths:
         - in: path
           name: projectId
           schema:
-            $ref: '#/components/schemas/TxHash' # TMP
+            $ref: '#/components/schemas/TxHash'
           required: true
           description: id of the project to retrieve
       responses:
         200:
           $ref: '#/components/responses/getProject'
-        404:
-          $ref: '#/components/responses/404'
-        415:
-          $ref: '#/components/responses/415'
-        500:
-          $ref: '#/components/responses/500'
+        default:
+          $ref: '#/components/responses/Error'
     patch:
       summary: Advance a project stage.
       description: Allows a reviewer to advance a project stage.
       tags:
         - Projects
-        - Reviewer
       parameters:
         - in: path
           name: projectId
@@ -106,21 +87,14 @@ paths:
       responses:
         200:
           $ref: '#/components/responses/patchProject'
-        400:
-          $ref: '#/components/responses/400'
-        404:
-          $ref: '#/components/responses/404'
-        415:
-          $ref: '#/components/responses/415'
-        500:
-          $ref: '#/components/responses/500'
+        default:
+          $ref: '#/components/responses/Error'
 
   /projects/{projectId}/funds:
     post:
       summary: Fund a project.
       description: Allows a payment from a wallet to fund a project.
       tags:
-        - Sponsor
         - Projects
       parameters:
         - in: path
@@ -134,14 +108,8 @@ paths:
       responses:
         200:
           $ref: '#/components/responses/postFund'
-        400:
-          $ref: '#/components/responses/400'
-        404:
-          $ref: '#/components/responses/404'
-        415:
-          $ref: '#/components/responses/415'
-        500:
-          $ref: '#/components/responses/500'
+        default:
+          $ref: '#/components/responses/Error'
 
   # WALLETS
   /wallets:
@@ -153,12 +121,8 @@ paths:
       responses:
         200:
           $ref: '#/components/responses/getAllWallets'
-        400:
-          $ref: '#/components/responses/400'
-        415:
-          $ref: '#/components/responses/415'
-        500:
-          $ref: '#/components/responses/500'
+        default:
+          $ref: '#/components/responses/Error'
     post:
       summary: Create a new wallet
       description: Allows a user to create a new wallet.
@@ -167,14 +131,8 @@ paths:
       responses:
         201:
           $ref: '#/components/responses/postWallet'
-        400:
-          $ref: '#/components/responses/400'
-        409:
-          $ref: '#/components/responses/409'
-        415:
-          $ref: '#/components/responses/415'
-        500:
-          $ref: '#/components/responses/500'
+        default:
+          $ref: '#/components/responses/Error'
 
   /wallets/{walletId}:
     get:
@@ -192,12 +150,39 @@ paths:
       responses:
         200:
           $ref: '#/components/responses/getWallet'
-        404:
-          $ref: '#/components/responses/404'
-        415:
-          $ref: '#/components/responses/415'
-        500:
-          $ref: '#/components/responses/500'
+        default:
+          $ref: '#/components/responses/Error'
+
+  /wallets/{walletId}/fundings:
+    get:
+      summary: Get the project fundings made by a wallet.
+      description: Allows a user to retrieve a wallet's project funding information by its id.
+      tags:
+        - Wallets
+      parameters:
+        - in: path
+          name: walletId
+          schema:
+            $ref: '#/components/schemas/WalletId'
+          required: true
+          description: id of the wallet whose project fundings we want to retrieve
+      responses:
+        200:
+          $ref: '#/components/responses/getWalletFundings'
+        default:
+          $ref: '#/components/responses/Error'
+
+  /wallets/fundings:
+    get:
+      summary: Get the project fundings made by a wallet.
+      description: Allows a user to retrieve all project funding information.
+      tags:
+        - Wallets
+      responses:
+        200:
+          $ref: '#/components/responses/getAllFundings'
+        default:
+          $ref: '#/components/responses/Error'
 
   # STATUS
   /health:
@@ -207,10 +192,8 @@ paths:
       responses:
         200:
           $ref: '#/components/responses/health'
-        400:
-          $ref: '#/components/responses/400'
-        415:
-          $ref: '#/components/responses/415'
+        default:
+          $ref: '#/components/responses/Error'
 
   /ping:
     get:
@@ -219,10 +202,8 @@ paths:
       responses:
         200:
           $ref: '#/components/responses/ping'
-        400:
-          $ref: '#/components/responses/400'
-        415:
-          $ref: '#/components/responses/415'
+        default:
+          $ref: '#/components/responses/Error'
 
 # =============================================================================
 
@@ -252,43 +233,10 @@ components:
   # ---------------------------------------------------------------------------
   responses:
     # ERRORS
-    400:
-      description: Bad request.
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/Error'
-
-    403:
-      description: Forbidden.
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/Error'
-
-    404:
-      description: Not found.
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/Error'
-
-    409:
-      description: Conflict.
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/Error'
-
-    415:
-      description: Unsupported Media Type.
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/Error'
-
-    500:
-      description: Internal Server Error.
+    Error:
+      description: >
+        An error has occured. Check response body for more
+        information about what happened.
       content:
         application/json:
           schema:
@@ -346,11 +294,25 @@ components:
             $ref: '#/components/schemas/Wallet'
 
     getAllWallets:
-      description: Wallets retrieveded successfully.
+      description: Wallets retrieved successfully.
       content:
         application/json:
           schema:
             $ref: '#/components/schemas/Wallets'
+
+    getWalletFundings:
+      description: Wallet fundings retrieved successfully
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Fundings'
+
+    getAllFundings:
+      description: Fundings retrieved successfully
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Fundings'
 
     postWallet:
       description: Wallet created successfully.
@@ -396,10 +358,10 @@ components:
 
     # TYPES
 
-    # Date:
-    #   type: string
-    #   format: date-time
-    #   example: '2021-06-13T21:29:29.330Z'
+    Date:
+      type: string
+      format: date-time
+      example: '2021-06-13T21:29:29.330Z'
 
     Id:
       type: integer
@@ -516,6 +478,31 @@ components:
           $ref: '#/components/schemas/WalletId'
 
     # WALLETS
+    Funding:
+      type: object
+      properties:
+        walletId:
+          $ref: '#/components/schemas/WalletId'
+        txHash:
+          $ref: '#/components/schemas/TxHash'
+        projectId:
+          $ref: '#/components/schemas/TxHash'
+        amount:
+          $ref: '#/components/schemas/ETHAmount'
+        date:
+          $ref: '#/components/schemas/Date'
+      required:
+        - walletId
+        - txHash
+        - projectId
+        - amount
+        - date
+
+    Fundings:
+      type: array
+      items:
+        $ref: '#/components/schemas/Funding'
+
     Wallet:
       type: object
       properties:

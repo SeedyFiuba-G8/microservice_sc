@@ -30,7 +30,7 @@ module.exports = function $projectService(config, conversionUtils, errors, logge
   }
 
   /**
-   * Assert a proj
+   * Assert a project's stage
    */
   async function assertProjectStage(currentStage, totalStages, completedStage) {
     if (currentStage > completedStage || completedStage > totalStages - 1)
