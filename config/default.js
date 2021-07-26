@@ -3,10 +3,12 @@ const ethers = require('ethers');
 require('dotenv').config();
 
 module.exports = {
+  deployerMnemonic: _.get(process.env, 'MNEMONIC'),
   express: {
     host: '0.0.0.0',
     port: _.get(process.env, 'PORT', 3000)
   },
+  infuraApiKey: _.get(process.env, 'INFURA_API_KEY'),
   knex: {
     client: 'pg',
     connection: {
@@ -25,6 +27,5 @@ module.exports = {
       label: 'microservice_sc'
     }
   },
-  deployerMnemonic: _.get(process.env, 'MNEMONIC'),
-  infuraApiKey: _.get(process.env, 'INFURA_API_KEY')
+  monitoring: true
 };
