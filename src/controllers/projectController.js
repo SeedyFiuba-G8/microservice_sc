@@ -60,7 +60,7 @@ module.exports = function $projectController(expressify, projectService, walletS
   /**
    * Advance the stage of a project
    *
-   * @returns
+   * @returns {Promise}
    */
   async function patch(req, res) {
     const tx = await projectService.setCompletedStage(
