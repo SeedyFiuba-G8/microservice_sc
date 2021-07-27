@@ -46,7 +46,6 @@ module.exports = function $walletService(config, conversionUtils, errors, logger
     const balances = await Promise.all(
       wallets.map(async (walletData) => (walletData.balance = await getBalance(walletData)))
     );
-    console.log('balances: ', balances);
     return wallets;
   }
 
@@ -80,9 +79,7 @@ module.exports = function $walletService(config, conversionUtils, errors, logger
   }
 
   async function getFundings(walletId) {
-    console.log('getting fundings of wallet: ', walletId);
     const fundings = await projectRepository.getFundings({ filters: { walletId } });
-    console.log('fundings: ', fundings);
     return fundings;
   }
 
