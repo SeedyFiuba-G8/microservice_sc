@@ -1,6 +1,12 @@
 const express = require('express');
 
-module.exports = function apiRouter(apiValidatorMiddleware, projectController, statusController, walletController) {
+module.exports = function apiRouter(
+  apiValidatorMiddleware,
+  projectController,
+  statusController,
+  walletController,
+  validateApikeyMiddleware
+) {
   return (
     express
       .Router()
@@ -9,24 +15,27 @@ module.exports = function apiRouter(apiValidatorMiddleware, projectController, s
 
       // OpenAPI Validator Middleware
       .use(apiValidatorMiddleware)
+      .use(validateApikeyMiddleware)
 
-      // PROJECTS
+      // STATUS
+      .get('/ping', statusController.ping)
+      .get('/health', statusController.health)
+
+      // ROUTES
+
+      // Projects
       .get('/projects', projectController.getAll)
       .post('/projects', projectController.create)
       .get('/projects/:projectId', projectController.get)
       .patch('/projects/:projectId', projectController.patch)
       .post('/projects/:projectId/funds', projectController.fund)
 
-      // WALLETS
+      // Wallets
       .post('/wallets/:walletAddress/funds', walletController.transfer)
       .get('/wallets/:walletId/fundings', walletController.getFundings)
       .get('/wallets/fundings', walletController.getAllFundings)
       .post('/wallets', walletController.create)
       .get('/wallets', walletController.getAll)
       .get('/wallets/:walletId', walletController.get)
-
-      // STATUS
-      .get('/ping', statusController.ping)
-      .get('/health', statusController.health)
   );
 };

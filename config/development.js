@@ -12,6 +12,8 @@ const deployArtifact = require(`../deployments/${network}/Seedifyuba`);
 const provider = new ethers.providers.JsonRpcProvider('http://localhost:8545');
 
 module.exports = {
+  contractAddress: deployArtifact.address,
+  contractAbi: deployArtifact.abi,
   knex: {
     connection: {
       connectionString: _.get(
@@ -26,9 +28,16 @@ module.exports = {
       level: 'debug'
     }
   },
-  contractAddress: deployArtifact.address,
-  contractAbi: deployArtifact.abi,
+  monitoring: false,
   network,
   provider,
-  monitoring: false
+  services: {
+    apikeys: {
+      baseUrl: _.get(
+        process.env,
+        'APIKEYS_URL',
+        'https://sf-tdp2-apikeys-dev.herokuapp.com/'
+      )
+    }
+  }
 };

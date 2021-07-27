@@ -1,8 +1,10 @@
 const dependable = require('dependable');
 const path = require('path');
 const apiComponents = require('@seedyfiuba/api_components');
+const apikeysComponents = require('@seedyfiuba/apikeys_components');
 const dbComponents = require('@seedyfiuba/db_components');
 const errorComponents = require('@seedyfiuba/error_components');
+const gatewayComponents = require('@seedyfiuba/gateway_components');
 const loggingComponents = require('@seedyfiuba/logging_components');
 
 function createContainer() {
@@ -13,6 +15,17 @@ function createContainer() {
   container.register('apiValidatorMiddleware', function $apiValidatorMiddleware() {
     return apiComponents.apiValidatorMiddleware(apiPath);
   });
+
+  container.register('apikeysCache', function $apikeysCache() {
+    return apikeysComponents.cache();
+  });
+
+  container.register(
+    'validateApikeyMiddleware',
+    function $validateApikeyMiddleware(apikeysCache, config, errors, fetch, logger, urlFactory) {
+      return apikeysComponents.middleware(apikeysCache, config, errors, fetch, logger, urlFactory);
+    }
+  );
 
   container.register('config', function $config() {
     if (!process.env.NODE_CONFIG_DIR) {
@@ -48,6 +61,10 @@ function createContainer() {
     return require('expressify')();
   });
 
+  container.register('fetch', function $commonFetch(config, errors, logger) {
+    return gatewayComponents.fetch(config, errors, logger);
+  });
+
   container.register('knex', function $knex(config) {
     return dbComponents.knex(config.knex);
   });
@@ -58,6 +75,10 @@ function createContainer() {
 
   container.register('loggingMiddleware', function $loggingMiddleware(logger) {
     return loggingComponents.loggingMiddleware(logger);
+  });
+
+  container.register('urlFactory', function $commonUrlFactory() {
+    return gatewayComponents.urlFactory();
   });
 
   entries.forEach((entry) => container.load(path.join(__dirname, entry)));
