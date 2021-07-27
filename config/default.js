@@ -27,6 +27,6 @@ module.exports = {
       label: 'microservice_sc'
     }
   },
-  gasLimit: 1000000,
+  gasLimit: 200000,
   monitoring: true
 };
