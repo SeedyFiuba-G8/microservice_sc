@@ -462,6 +462,14 @@ components:
           $ref: '#/components/schemas/ETHAmount'
         stagesCost:
           $ref: '#/components/schemas/StagesCost'
+        contributors:
+          type: integer
+          example: 2
+          description: Number of distinct users that contributed to the project.
+        contributions:
+          type: integer
+          example: 5
+          description: Number of contributions made to the project.
 
       required:
         - txHash
@@ -473,6 +481,8 @@ components:
         - totalStages
         - totalFunded
         - stagesCost
+        - contributors
+        - contributions
 
     Projects:
       type: array

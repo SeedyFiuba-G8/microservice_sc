@@ -80,9 +80,7 @@ module.exports = function $walletService(config, conversionUtils, errors, logger
   }
 
   async function getFundings(walletId) {
-    console.log('getting fundings of wallet: ', walletId);
     const fundings = await projectRepository.getFundings({ filters: { walletId } });
-    console.log('fundings: ', fundings);
     return fundings;
   }
 

@@ -86,11 +86,18 @@ module.exports = function $projectRepository(dbUtils, errors, knex, logger) {
           return Number(stage.cost);
         });
 
+      const projectFunds = funds.filter((fund) => project.projectId === fund.projectId);
+
       // Add total funds
-      project.totalFunded = _.sumBy(
-        funds.filter((fund) => project.projectId === fund.projectId),
-        (fund) => Number(fund.amount)
-      );
+      project.totalFunded = _.sumBy(projectFunds, (fund) => Number(fund.amount));
+
+      // Add contributors and contributions
+      project.contributions = projectFunds.length;
+
+      const distinctContributors = new Set();
+      projectFunds.forEach((fund) => distinctContributors.add(fund.walletId));
+      project.contributors = distinctContributors.size;
+
       return project;
     });
 
