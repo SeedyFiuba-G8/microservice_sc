@@ -1,6 +1,6 @@
 const ethers = require('ethers');
 
-module.exports = function $walletService(config, conversionUtils, errors, projectRepository, walletRepository) {
+module.exports = function $walletService(config, conversionUtils, errors, logger, projectRepository, walletRepository) {
   return {
     createWallet,
     getDeployerWallet,
@@ -8,7 +8,8 @@ module.exports = function $walletService(config, conversionUtils, errors, projec
     getAllFundings,
     getWallet,
     getWalletData,
-    getWalletsData
+    getWalletsData,
+    transfer
   };
 
   function getDeployerWallet() {
@@ -86,9 +87,23 @@ module.exports = function $walletService(config, conversionUtils, errors, projec
   }
 
   async function getAllFundings() {
-    console.log('getting all fundings');
     const fundings = await projectRepository.getFundings();
-    console.log('fundings: ', fundings);
     return fundings;
+  }
+
+  async function transfer(fromWalletId, toWalletAddress, amount) {
+    const sourceWallet = await getWallet(fromWalletId);
+    const tx = {
+      to: toWalletAddress,
+      value: ethers.utils.parseEther(String(amount))
+    };
+
+    const txResponse = await sourceWallet.sendTransaction(tx);
+
+    logger.info(
+      `Transferred ${amount} from walletId ${fromWalletId} to address ${toWalletAddress} in tx ${txResponse.hash}`
+    );
+
+    return txResponse.hash;
   }
 };

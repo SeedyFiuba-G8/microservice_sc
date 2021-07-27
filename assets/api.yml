@@ -104,10 +104,10 @@ paths:
           required: true
           description: id of the project to retrieve
       requestBody:
-        $ref: '#/components/requestBodies/postFund'
+        $ref: '#/components/requestBodies/postFunds'
       responses:
         200:
-          $ref: '#/components/responses/postFund'
+          $ref: '#/components/responses/postFunds'
         default:
           $ref: '#/components/responses/Error'
 
@@ -150,6 +150,27 @@ paths:
       responses:
         200:
           $ref: '#/components/responses/getWallet'
+        default:
+          $ref: '#/components/responses/Error'
+
+  /wallets/{walletAddress}/funds:
+    post:
+      summary: Transfer funds to an external wallet
+      description: Allows a user to transfer funds to walletAddress.
+      tags:
+        - Wallets
+      parameters:
+        - in: path
+          name: walletAddress
+          schema:
+            $ref: '#/components/schemas/Address'
+          required: true
+          description: address of the wallet we want to transfer funds
+      requestBody:
+        $ref: '#/components/requestBodies/transferFunds'
+      responses:
+        200:
+          $ref: '#/components/responses/transferFunds'
         default:
           $ref: '#/components/responses/Error'
 
@@ -224,12 +245,19 @@ components:
           schema:
             $ref: '#/components/schemas/PatchProjectData'
 
-    postFund:
+    postFunds:
       required: true
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/PostFundData'
+            $ref: '#/components/schemas/PostFundsData'
+
+    transferFunds:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/PostFundsData'
   # ---------------------------------------------------------------------------
   responses:
     # ERRORS
@@ -278,7 +306,7 @@ components:
           schema:
             $ref: '#/components/schemas/TxHash'
 
-    postFund:
+    postFunds:
       description: Project funding transaction successful.
       content:
         application/json:
@@ -320,6 +348,13 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/PostWallet'
+
+    transferFunds:
+      description: Funds transfering transaction initialized.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/TxHash'
 
     # STATUS
     health:
@@ -534,7 +569,7 @@ components:
           $ref: '#/components/schemas/Address'
 
     # FUNDING
-    PostFundData:
+    PostFundsData:
       type: object
       properties:
         walletId:

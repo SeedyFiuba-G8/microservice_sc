@@ -9,7 +9,8 @@ module.exports = function $walletController(expressify, walletService) {
     get,
     getAll,
     getFundings,
-    getAllFundings
+    getAllFundings,
+    transfer
   });
 
   /**
@@ -61,5 +62,19 @@ module.exports = function $walletController(expressify, walletService) {
   async function getAll(req, res) {
     const wallets = await walletService.getWalletsData();
     return res.status(200).json(wallets.map((wallet) => _.omit(wallet, sensitiveValues)));
+  }
+
+  /**
+   * Transfer funds from a inner wallet to a specified address
+   *
+   * @returns {Promise}
+   */
+  async function transfer(req, res) {
+    const { walletAddress } = req.params;
+    const { amount, walletId } = req.body;
+
+    const tx = await walletService.transfer(walletId, walletAddress, amount);
+
+    return res.status(200).json(tx);
   }
 };
