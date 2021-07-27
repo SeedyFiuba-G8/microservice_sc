@@ -7,13 +7,18 @@ const deployArtifact = require(`../deployments/${network}/Seedifyuba`);
 const provider = new ethers.providers.InfuraProvider(network, _.get(process.env, 'INFURA_API_KEY'));
 
 module.exports = {
+  contractAddress: deployArtifact.address,
+  contractAbi: deployArtifact.abi,
   knex: {
     connection: {
       ssl: { rejectUnauthorized: false }
     }
   },
-  contractAddress: deployArtifact.address,
-  contractAbi: deployArtifact.abi,
   network,
-  provider
+  provider,
+  services: {
+    apikeys: {
+      baseUrl: 'https://sf-tdp2-apikeys-dev.herokuapp.com/'
+    }
+  }
 };
