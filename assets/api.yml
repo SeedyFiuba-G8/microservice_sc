@@ -211,6 +211,16 @@ paths:
           $ref: '#/components/responses/Error'
 
   # STATUS
+  /info:
+    get:
+      tags:
+        - Status
+      responses:
+        200:
+          $ref: '#/components/responses/info'
+        default:
+          $ref: '#/components/responses/Error'
+
   /health:
     get:
       tags:
@@ -369,6 +379,13 @@ components:
             $ref: '#/components/schemas/TxHash'
 
     # STATUS
+    info:
+      description: Microservice general info reported.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Info'
+
     health:
       description: Microservice general health state reported.
       content:
@@ -603,6 +620,18 @@ components:
         - amount
 
     # STATUS
+    Info:
+      type: object
+      properties:
+        creationDate:
+          $ref: '#/components/schemas/Date'
+        description:
+          type: string
+          example: 'Service description!'
+      required:
+        - creationDate
+        - description
+
     Ping:
       type: object
       properties:

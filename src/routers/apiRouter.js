@@ -20,6 +20,7 @@ module.exports = function apiRouter(
       // STATUS
       .get('/ping', statusController.ping)
       .get('/health', statusController.health)
+      .get('/info', statusController.info)
 
       // ROUTES
 

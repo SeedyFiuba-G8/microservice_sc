@@ -77,6 +77,13 @@ function createContainer() {
     return loggingComponents.loggingMiddleware(logger);
   });
 
+  container.register('serviceInfo', function $serverInfo() {
+    return {
+      creationDate: new Date(),
+      description: 'Smart Contracts microservice that manages wallets, transactions and general smart contract flow.'
+    };
+  });
+
   container.register('urlFactory', function $commonUrlFactory() {
     return gatewayComponents.urlFactory();
   });
