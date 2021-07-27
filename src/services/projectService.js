@@ -1,7 +1,5 @@
 const ethers = require('ethers');
 
-const GAS_LIMIT = 100000;
-
 module.exports = function $projectService(config, conversionUtils, errors, logger, projectRepository) {
   return {
     create,
@@ -30,7 +28,7 @@ module.exports = function $projectService(config, conversionUtils, errors, logge
   }
 
   /**
-   * Assert a proj
+   * Assert a project's stage
    */
   async function assertProjectStage(currentStage, totalStages, completedStage) {
     if (currentStage > completedStage || completedStage > totalStages - 1)
@@ -135,7 +133,7 @@ module.exports = function $projectService(config, conversionUtils, errors, logge
     await validateFunding(sponsorWallet, projectId, amount);
 
     const seedyfiuba = await getContract(config, sponsorWallet);
-    const tx = await seedyfiuba.fund(projectId, { value: conversionUtils.toWei(amount), gasLimit: GAS_LIMIT });
+    const tx = await seedyfiuba.fund(projectId, { value: conversionUtils.toWei(amount), gasLimit: config.gasLimit });
     tx.wait(1).then(async (receipt) => {
       logger.info('Funding transaction mined');
       if (!(receipt && receipt.events)) {
@@ -211,7 +209,7 @@ module.exports = function $projectService(config, conversionUtils, errors, logge
     await validateStageCompletion(projectId, reviewerWallet, completedStage);
 
     const seedyfiuba = await getContract(config, reviewerWallet);
-    const tx = await seedyfiuba.setCompletedStage(projectId, completedStage, { gasLimit: GAS_LIMIT });
+    const tx = await seedyfiuba.setCompletedStage(projectId, completedStage, { gasLimit: config.gasLimit });
     tx.wait(1).then((receipt) => {
       logger.info('SetCompletedStage transaction mined.');
       if (!(receipt && receipt.events)) {

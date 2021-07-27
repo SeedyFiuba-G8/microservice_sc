@@ -40,5 +40,6 @@ CREATE TABLE public.records (
 	project_id			INTEGER			NOT NULL	REFERENCES public.projects (project_id) ON DELETE RESTRICT,
 	amount				NUMERIC			NOT NULL,
 	tx_hash				VARCHAR(128)	NOT NULL	UNIQUE,
+	date			TIMESTAMP WITH TIME ZONE	NOT NULL	DEFAULT CURRENT_TIMESTAMP(2),
 	PRIMARY KEY (wallet_id, project_id, tx_hash)
 );

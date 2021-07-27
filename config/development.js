@@ -29,5 +29,6 @@ module.exports = {
   contractAddress: deployArtifact.address,
   contractAbi: deployArtifact.abi,
   network,
-  provider
+  provider,
+  monitoring: false
 };

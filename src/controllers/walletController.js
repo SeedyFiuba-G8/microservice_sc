@@ -7,7 +7,10 @@ module.exports = function $walletController(expressify, walletService) {
   return expressify({
     create,
     get,
-    getAll
+    getAll,
+    getFundings,
+    getAllFundings,
+    transfer
   });
 
   /**
@@ -31,6 +34,27 @@ module.exports = function $walletController(expressify, walletService) {
   }
 
   /**
+   * Gets the information of the project fundings made by a wallet by its id
+   *
+   * @returns {Promise}
+   */
+  async function getFundings(req, res) {
+    const { walletId } = req.params;
+    const fundings = await walletService.getFundings(walletId);
+    return res.status(200).json(fundings);
+  }
+
+  /**
+   * Gets the information of all project fundings
+   *
+   * @returns {Promise}
+   */
+  async function getAllFundings(req, res) {
+    const fundings = await walletService.getAllFundings();
+    return res.status(200).json(fundings);
+  }
+
+  /**
    * Gets the information of all registered wallets
    *
    * @returns {Promise}
@@ -38,5 +62,19 @@ module.exports = function $walletController(expressify, walletService) {
   async function getAll(req, res) {
     const wallets = await walletService.getWalletsData();
     return res.status(200).json(wallets.map((wallet) => _.omit(wallet, sensitiveValues)));
+  }
+
+  /**
+   * Transfer funds from a inner wallet to a specified address
+   *
+   * @returns {Promise}
+   */
+  async function transfer(req, res) {
+    const { walletAddress } = req.params;
+    const { amount, walletId } = req.body;
+
+    const tx = await walletService.transfer(walletId, walletAddress, amount);
+
+    return res.status(200).json(tx);
   }
 };

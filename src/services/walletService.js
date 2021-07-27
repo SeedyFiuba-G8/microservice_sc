@@ -1,12 +1,15 @@
 const ethers = require('ethers');
 
-module.exports = function $walletService(config, conversionUtils, errors, walletRepository) {
+module.exports = function $walletService(config, conversionUtils, errors, logger, projectRepository, walletRepository) {
   return {
     createWallet,
     getDeployerWallet,
+    getFundings,
+    getAllFundings,
     getWallet,
     getWalletData,
-    getWalletsData
+    getWalletsData,
+    transfer
   };
 
   function getDeployerWallet() {
@@ -21,14 +24,12 @@ module.exports = function $walletService(config, conversionUtils, errors, wallet
       address: wallet.address,
       privateKey: wallet.privateKey
     };
-    // This is temporal and should be purged and cleaned. TMP
+
+    // This is for local testing purposes.
+    // We transfer eths to wallets in hardhat deployment
     if (config.network === 'localhost') {
       const tx = {
-        // Required unless deploying a contract (in which case omit)
-        to: wallet.address, // the target address or ENS name
-
-        // These are always optional (but for call, data is usually specified)
-        // the amount (in wei) this transaction is sending
+        to: wallet.address,
         value: ethers.utils.parseEther('1000')
       };
 
@@ -76,5 +77,33 @@ module.exports = function $walletService(config, conversionUtils, errors, wallet
   async function getWallet(walletId) {
     const walletData = await getWalletData(walletId);
     return new ethers.Wallet(walletData.privateKey, config.provider);
+  }
+
+  async function getFundings(walletId) {
+    console.log('getting fundings of wallet: ', walletId);
+    const fundings = await projectRepository.getFundings({ filters: { walletId } });
+    console.log('fundings: ', fundings);
+    return fundings;
+  }
+
+  async function getAllFundings() {
+    const fundings = await projectRepository.getFundings();
+    return fundings;
+  }
+
+  async function transfer(fromWalletId, toWalletAddress, amount) {
+    const sourceWallet = await getWallet(fromWalletId);
+    const tx = {
+      to: toWalletAddress,
+      value: ethers.utils.parseEther(String(amount))
+    };
+
+    const txResponse = await sourceWallet.sendTransaction(tx);
+
+    logger.info(
+      `Transferred ${amount} from walletId ${fromWalletId} to address ${toWalletAddress} in tx ${txResponse.hash}`
+    );
+
+    return txResponse.hash;
   }
 };
