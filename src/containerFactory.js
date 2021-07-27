@@ -23,11 +23,6 @@ function createContainer() {
   container.register(
     'validateApikeyMiddleware',
     function $validateApikeyMiddleware(apikeysCache, config, errors, fetch, logger, urlFactory) {
-      // Temporal
-      logger.debug({
-        message: 'Creating validateApikeyMiddleware with config.services...',
-        services: config.services
-      });
       return apikeysComponents.middleware(apikeysCache, config, errors, fetch, logger, urlFactory);
     }
   );
