@@ -20,16 +20,18 @@ module.exports = {
       connectionString: _.get(process.env, 'DATABASE_URL')
     }
   },
-  log: {
+  logger: {
     console: {
       enabled: true,
-      level: 'info',
-      timestamp: true,
-      prettyPrint: true,
-      json: false,
-      colorize: true,
-      stringify: false,
-      label: 'microservice_sc'
+      level: _.get(process.env, 'LOGGER_LEVEL', 'info'),
+      prettyPrint: true
+    },
+    http: {
+      enabled: true,
+      level: _.get(process.env, 'LOGGER_LEVEL', 'info'),
+      host: _.get(process.env, 'SUMOLOGIC_HOST'),
+      path: _.get(process.env, 'SUMOLOGIC_PATH'),
+      ssl: true
     }
   },
   monitoring: true,
