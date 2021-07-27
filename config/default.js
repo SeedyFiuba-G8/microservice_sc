@@ -8,6 +8,10 @@ module.exports = {
     host: '0.0.0.0',
     port: _.get(process.env, 'PORT', 3000)
   },
+  fetch: {
+    forwardHeaders: [],
+    timeout: 300000 // ms
+  },
   gasLimit: 200000,
   infuraApiKey: _.get(process.env, 'INFURA_API_KEY'),
   knex: {
