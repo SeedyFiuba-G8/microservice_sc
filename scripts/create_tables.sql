@@ -43,3 +43,9 @@ CREATE TABLE public.records (
 	date			TIMESTAMP WITH TIME ZONE	NOT NULL	DEFAULT CURRENT_TIMESTAMP(2),
 	PRIMARY KEY (wallet_id, project_id, tx_hash)
 );
+
+CREATE TABLE public.notification_tokens (
+	wallet_id						VARCHAR(36)		NOT NULL 	REFERENCES public.wallets (wallet_id) ON DELETE RESTRICT,
+	token 							VARCHAR(255)	NOT NULL,
+	PRIMARY KEY (wallet_id, token)
+);
