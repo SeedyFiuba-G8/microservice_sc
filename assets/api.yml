@@ -231,6 +231,29 @@ paths:
         default:
           $ref: '#/components/responses/Error'
 
+    delete:
+      summary: Remove a user's token
+      description: Allows a user to remove its push notifications token
+      tags:
+        - Notifications
+      parameters:
+        - in: path
+          name: walletId
+          schema:
+            $ref: '#/components/schemas/WalletId'
+          required: true
+          description: id of the user whose token we want to remove
+        - in: header
+          name: expo-token
+          schema:
+            $ref: '#/components/schemas/ExpoToken'
+          description: push expoToken of the user
+      responses:
+        200:
+          description: 'Token removed successfully.'
+        default:
+          $ref: '#/components/responses/Error'
+
   # STATUS
   /info:
     get:

@@ -1,7 +1,8 @@
 module.exports = function $notificationRepository(dbUtils, errors, knex, logger) {
   return {
     get,
-    push
+    push,
+    remove
   };
 
   function push(walletId, token) {
@@ -23,5 +24,9 @@ module.exports = function $notificationRepository(dbUtils, errors, knex, logger)
       .select('token')
       .then(dbUtils.mapFromDb)
       .then((tokens) => tokens.map((token) => token.token));
+  }
+
+  function remove(walletId, token) {
+    return knex('notification_tokens').where(dbUtils.mapToDb({ walletId, token })).del();
   }
 };

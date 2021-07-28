@@ -42,5 +42,6 @@ module.exports = function apiRouter(
 
       // Notifications
       .post('/wallets/:walletId/pushToken', notificationController.pushToken)
+      .delete('/wallets/:walletId/pushToken', notificationController.removeToken)
   );
 };
