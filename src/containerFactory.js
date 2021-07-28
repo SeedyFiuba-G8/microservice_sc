@@ -6,6 +6,7 @@ const dbComponents = require('@seedyfiuba/db_components');
 const errorComponents = require('@seedyfiuba/error_components');
 const gatewayComponents = require('@seedyfiuba/gateway_components');
 const loggingComponents = require('@seedyfiuba/logging_components');
+const notificationComponents = require('@seedyfiuba/notification_components');
 
 function createContainer() {
   const container = dependable.container();
@@ -75,6 +76,10 @@ function createContainer() {
 
   container.register('loggingMiddleware', function $loggingMiddleware(logger) {
     return loggingComponents.loggingMiddleware(logger);
+  });
+
+  container.register('sendNotifications', function $sendNotifications(logger) {
+    return notificationComponents.send(logger);
   });
 
   container.register('serviceInfo', function $serverInfo() {

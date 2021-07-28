@@ -2,6 +2,7 @@ const express = require('express');
 
 module.exports = function apiRouter(
   apiValidatorMiddleware,
+  notificationController,
   projectController,
   statusController,
   walletController,
@@ -38,5 +39,8 @@ module.exports = function apiRouter(
       .post('/wallets', walletController.create)
       .get('/wallets', walletController.getAll)
       .get('/wallets/:walletId', walletController.get)
+
+      // Notifications
+      .post('/wallets/:walletId/pushToken', notificationController.pushToken)
   );
 };

@@ -210,6 +210,27 @@ paths:
         default:
           $ref: '#/components/responses/Error'
 
+  /wallets/{walletId}/pushToken:
+    post:
+      summary: Post a user's expo push notification token
+      description: Allows a user to post a user's expo push notification token.
+      tags:
+        - Notifications
+      parameters:
+        - in: path
+          name: walletId
+          schema:
+            $ref: '#/components/schemas/WalletId'
+          required: true
+          description: id of the wallet whose token we want to post
+      requestBody:
+        $ref: '#/components/requestBodies/pushTokenData'
+      responses:
+        200:
+          $ref: '#/components/responses/pushToken'
+        default:
+          $ref: '#/components/responses/Error'
+
   # STATUS
   /info:
     get:
@@ -273,6 +294,13 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/PostFundsData'
+
+    pushTokenData:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/PushTokenData'
 
     transferFunds:
       required: true
@@ -371,6 +399,13 @@ components:
           schema:
             $ref: '#/components/schemas/PostWallet'
 
+    pushToken:
+      description: Token registered successfully.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/WalletId'
+
     transferFunds:
       description: Funds transfering transaction initialized.
       content:
@@ -426,6 +461,10 @@ components:
       type: string
       format: date-time
       example: '2021-06-13T21:29:29.330Z'
+
+    ExpoToken:
+      type: string
+      example: 'ExponentPushToken[AbCdEfGHO1YJKlm_NStuvw]'
 
     Id:
       type: integer
@@ -606,6 +645,14 @@ components:
           example: '0xd86233940000000000000000000000000000000000000000000000000000000000000060000000000000000000000000f018be4fe4fbd4ca1b1162a44bb139a343c2087b00000000000000000000000019544c4b8ce1c08c81bb67c4075265d967935dcd00000000000000000000000000000000000000000000000000000000000000030000000000000000000000000000000000000000000000008ac7230489e80000000000000000000000000000000000000000000000000001158e460913d000000000000000000000000000000000000000000000000000008ac7230489e80000'
         from:
           $ref: '#/components/schemas/Address'
+
+    PushTokenData:
+      type: object
+      properties:
+        token:
+          $ref: '#/components/schemas/ExpoToken'
+      required:
+        - token
 
     # FUNDING
     PostFundsData:
