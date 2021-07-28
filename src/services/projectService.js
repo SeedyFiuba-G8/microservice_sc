@@ -71,9 +71,11 @@ module.exports = function $projectService(config, conversionUtils, errors, logge
       projectOwnerAddress,
       projectReviewerAddress
     );
+
     tx.wait(1)
       .then((receipt) => {
         logger.info('CreateProject transaction mined');
+
         const firstEvent = receipt && receipt.events && receipt.events[0];
         if (firstEvent && firstEvent.event == 'ProjectCreated') {
           projectId = firstEvent.args.projectId.toNumber();
@@ -97,12 +99,12 @@ module.exports = function $projectService(config, conversionUtils, errors, logge
   }
 
   async function fund(sponsorId, sponsorWallet, txHash, amount) {
-    const projectId = (await get(txHash)).projectId; // TMP
+    const projectId = (await get(txHash)).projectId;
 
     async function validateFunding(wallet, projectId, amount) {
       const project = await _get(projectId);
       await assertProjectStatus(project.currentStatus, projectRepository.status.FUNDING);
-      await assertWalletBalance(sponsorWallet, amount);
+      await assertWalletBalance(wallet, amount);
     }
 
     async function handleEvent(event, txHash) {
@@ -134,6 +136,7 @@ module.exports = function $projectService(config, conversionUtils, errors, logge
 
     const seedyfiuba = await getContract(config, sponsorWallet);
     const tx = await seedyfiuba.fund(projectId, { value: conversionUtils.toWei(amount), gasLimit: config.gasLimit });
+
     tx.wait(1).then(async (receipt) => {
       logger.info('Funding transaction mined');
       if (!(receipt && receipt.events)) {
@@ -145,17 +148,21 @@ module.exports = function $projectService(config, conversionUtils, errors, logge
         await handleEvent(event, tx.hash);
       });
     });
+
     return tx.hash;
   }
 
   async function get(txHash) {
     logger.info(`Getting project with hash: ${txHash}`);
+
     const projectData = await projectRepository.get({
       filters: {
         txHash
       }
     });
+
     if (!projectData.length) throw errors.create(404, 'No project found with specified id.');
+
     return projectData[0];
   }
 
@@ -166,7 +173,9 @@ module.exports = function $projectService(config, conversionUtils, errors, logge
         projectId
       }
     });
+
     if (!projectData.length) throw errors.create(404, 'No project found with specified id.');
+
     return projectData[0];
   }
 
@@ -177,7 +186,7 @@ module.exports = function $projectService(config, conversionUtils, errors, logge
   }
 
   async function setCompletedStage(txHash, reviewerWallet, completedStage) {
-    const projectId = (await get(txHash)).projectId; // TMP
+    const projectId = (await get(txHash)).projectId;
 
     async function validateStageCompletion(projectId, reviewerWallet, completedStage) {
       const project = await _get(projectId);
@@ -189,16 +198,15 @@ module.exports = function $projectService(config, conversionUtils, errors, logge
     async function handleEvent(event, projectId) {
       const handlers = {
         StageCompleted: async (event) => {
-          logger.info('Stage completed!');
+          logger.info(`Stage ${completedStage} of project ${projectId} completed!`);
           const projectId = event.args.projectId.toNumber();
           const completedStage = event.args.stageCompleted.toNumber();
 
           projectRepository.update(projectId, { currentStage: completedStage + 1 });
         },
         ProjectCompleted: async (event) => {
-          logger.info('Project completed!');
           const projectId = event.args.projectId.toNumber();
-
+          logger.info(`Project ${projectId} completed!`);
           projectRepository.update(projectId, { currentStatus: projectRepository.status.COMPLETED });
         }
       };
@@ -210,6 +218,7 @@ module.exports = function $projectService(config, conversionUtils, errors, logge
 
     const seedyfiuba = await getContract(config, reviewerWallet);
     const tx = await seedyfiuba.setCompletedStage(projectId, completedStage, { gasLimit: config.gasLimit });
+
     tx.wait(1).then((receipt) => {
       logger.info('SetCompletedStage transaction mined.');
       if (!(receipt && receipt.events)) {
@@ -221,6 +230,7 @@ module.exports = function $projectService(config, conversionUtils, errors, logge
         await handleEvent(event, projectId);
       });
     });
+
     return tx.hash;
   }
 };
