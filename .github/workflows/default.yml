@@ -62,7 +62,7 @@ jobs:
         run: heroku container:login
 
       - name: Tag container
-        run: docker tag core_microservice registry.heroku.com/sf-tdp2-sc/web
+        run: docker tag sc_microservice registry.heroku.com/sf-tdp2-sc/web
 
       - name: Push container
         run: docker push registry.heroku.com/sf-tdp2-sc/web
