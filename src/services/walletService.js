@@ -43,10 +43,6 @@ module.exports = function $walletService(config, conversionUtils, errors, logger
 
   async function getWalletsData() {
     const wallets = await walletRepository.get();
-    const balances = await Promise.all(
-      wallets.map(async (walletData) => (walletData.balance = await getBalance(walletData)))
-    );
-    console.log('balances: ', balances);
     return wallets;
   }
 
