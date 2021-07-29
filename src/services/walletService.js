@@ -90,13 +90,22 @@ module.exports = function $walletService(config, conversionUtils, errors, logger
   }
 
   async function transfer(fromWalletId, toWalletAddress, amount) {
+    let txResponse;
     const sourceWallet = await getWallet(fromWalletId);
     const tx = {
       to: toWalletAddress,
       value: ethers.utils.parseEther(String(amount))
     };
 
-    const txResponse = await sourceWallet.sendTransaction(tx);
+    try {
+      txResponse = await sourceWallet.sendTransaction(tx);
+    } catch (err) {
+      logger.error(err);
+      throw errors.create(
+        400,
+        'Could not make ETHs transfer. Please check your wallet balance and/or destination address.'
+      );
+    }
 
     logger.info(
       `Transferred ${amount} from walletId ${fromWalletId} to address ${toWalletAddress} in tx ${txResponse.hash}`

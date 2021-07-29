@@ -4,6 +4,7 @@ module.exports = function $walletRepository(dbUtils, errors, knex, logger) {
   return {
     create,
     get,
+    getWalletId,
     remove
   };
 
@@ -38,6 +39,12 @@ module.exports = function $walletRepository(dbUtils, errors, knex, logger) {
     if (offset) query.offset(offset);
 
     return query.then(dbUtils.mapFromDb);
+  }
+
+  async function getWalletId(address) {
+    const wallet = (await knex('wallets').where({ address }).select('wallet_id').then(dbUtils.mapFromDb))[0];
+    if (!wallet) return;
+    return wallet.walletId;
   }
 
   /**

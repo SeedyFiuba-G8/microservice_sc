@@ -13,11 +13,12 @@ module.exports = function $projectController(expressify, projectService, walletS
    * @returns {Promise}
    */
   async function create(req, res) {
+    const { ownerId, reviewerId, stagesCost } = req.body;
     const tx = await projectService.create(
       walletService.getDeployerWallet(),
-      req.body.stagesCost,
-      (await walletService.getWalletData(req.body.ownerId)).address,
-      (await walletService.getWalletData(req.body.reviewerId)).address
+      stagesCost,
+      (await walletService.getWalletData(ownerId)).address,
+      (await walletService.getWalletData(reviewerId)).address
     );
     return res.status(200).json(tx);
   }
@@ -28,12 +29,9 @@ module.exports = function $projectController(expressify, projectService, walletS
    * @returns {Promise}
    */
   async function fund(req, res) {
-    const tx = await projectService.fund(
-      req.body.walletId,
-      await walletService.getWallet(req.body.walletId),
-      req.params.projectId,
-      req.body.amount
-    );
+    const { walletId, amount } = req.body;
+    const { projectId } = req.params;
+    const tx = await projectService.fund(walletId, await walletService.getWallet(walletId), projectId, amount);
     return res.status(200).json(tx);
   }
 
@@ -43,7 +41,8 @@ module.exports = function $projectController(expressify, projectService, walletS
    * @returns {Promise}
    */
   async function get(req, res) {
-    const projectInfo = await projectService.get(req.params.projectId);
+    const { projectId } = req.params;
+    const projectInfo = await projectService.get(projectId);
     return res.status(200).json(projectInfo);
   }
 
@@ -63,10 +62,12 @@ module.exports = function $projectController(expressify, projectService, walletS
    * @returns {Promise}
    */
   async function patch(req, res) {
+    const { projectId } = req.params;
+    const { completedStage, reviewerId } = req.body;
     const tx = await projectService.setCompletedStage(
-      req.params.projectId,
-      await walletService.getWallet(req.body.reviewerId),
-      req.body.completedStage
+      projectId,
+      await walletService.getWallet(reviewerId),
+      completedStage
     );
     return res.status(200).json(tx);
   }

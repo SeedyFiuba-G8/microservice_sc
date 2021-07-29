@@ -1,6 +1,14 @@
 const ethers = require('ethers');
 
-module.exports = function $projectService(config, conversionUtils, errors, logger, projectRepository) {
+module.exports = function $projectService(
+  config,
+  conversionUtils,
+  errors,
+  logger,
+  notificationService,
+  projectRepository,
+  walletRepository
+) {
   return {
     create,
     fund,
@@ -65,46 +73,134 @@ module.exports = function $projectService(config, conversionUtils, errors, logge
    */
   async function create(deployerWallet, stagesCost, projectOwnerAddress, projectReviewerAddress) {
     let projectId;
+    let tx;
     const seedyfiuba = await getContract(config, deployerWallet);
-    const tx = await seedyfiuba.createProject(
-      stagesCost.map(conversionUtils.toWei),
-      projectOwnerAddress,
-      projectReviewerAddress
-    );
 
-    tx.wait(1)
-      .then((receipt) => {
-        logger.info('CreateProject transaction mined');
-
-        const firstEvent = receipt && receipt.events && receipt.events[0];
-        if (firstEvent && firstEvent.event == 'ProjectCreated') {
-          projectId = firstEvent.args.projectId.toNumber();
-          logger.info(`Project created in tx ${tx.hash}`);
-        } else {
-          logger.error(`Project not created in tx ${tx.hash}`);
-          throw errors.UnknownError;
-        }
-      })
-      .then(
-        async () =>
-          await projectRepository.create({
-            hash: tx.hash,
-            projectId,
-            stagesCost,
-            projectOwnerAddress,
-            projectReviewerAddress
-          })
+    async function sendErrorNotifications(projectOwnerAddress, projectReviewerAddress) {
+      await notificationService.pushNotification(
+        await walletRepository.getWalletId(projectOwnerAddress),
+        'Project could not be published :(',
+        'Your project could not be published. It will remain draft. Tap for more info.',
+        { type: 'entrepeneurProjectNotPublished' }
       );
+
+      await notificationService.pushNotification(
+        await walletRepository.getWalletId(projectReviewerAddress),
+        'Project could not be published :(',
+        'A project you review could not be published. It will remain draft. Tap for more info.',
+        { type: 'reviewerProjectNotPublished' }
+      );
+    }
+
+    async function sendProjectCreatedNotifications(projectOwnerAddress, projectReviewerAddress) {
+      await notificationService.pushNotification(
+        await walletRepository.getWalletId(projectOwnerAddress),
+        'Project published!',
+        'Your project was successfully published. Tap for more info.',
+        { type: 'entrepeneurProjectPublished' }
+      );
+
+      await notificationService.pushNotification(
+        await walletRepository.getWalletId(projectReviewerAddress),
+        'Project published!',
+        'A project you review was successfully published. Tap for more info.',
+        { type: 'reviewerProjectPublished' }
+      );
+    }
+    try {
+      tx = await seedyfiuba.createProject(
+        stagesCost.map(conversionUtils.toWei),
+        projectOwnerAddress,
+        projectReviewerAddress
+      );
+
+      tx.wait(1)
+        .then(async (receipt) => {
+          logger.info('CreateProject transaction mined');
+
+          const firstEvent = receipt && receipt.events && receipt.events[0];
+          if (firstEvent && firstEvent.event == 'ProjectCreated') {
+            projectId = firstEvent.args.projectId.toNumber();
+            logger.info(`Project created in tx ${tx.hash}`);
+            sendProjectCreatedNotifications(projectOwnerAddress, projectReviewerAddress);
+          } else {
+            logger.error(`Project not created in tx ${tx.hash}`);
+            sendErrorNotifications(projectOwnerAddress, projectReviewerAddress);
+            throw errors.UnknownError;
+          }
+        })
+        .then(
+          async () =>
+            await projectRepository.create({
+              hash: tx.hash,
+              projectId,
+              stagesCost,
+              projectOwnerAddress,
+              projectReviewerAddress
+            })
+        );
+    } catch (err) {
+      sendErrorNotifications(projectOwnerAddress, projectReviewerAddress);
+      logger.error(err.message);
+      throw errors.create(
+        400,
+        `App's wallet was not able to initialize transaction. Contact an administrator. Details: ${err.message}`
+      );
+    }
     return tx.hash;
   }
 
   async function fund(sponsorId, sponsorWallet, txHash, amount) {
+    let tx;
     const projectId = (await get(txHash)).projectId;
 
     async function validateFunding(wallet, projectId, amount) {
       const project = await _get(projectId);
       await assertProjectStatus(project.currentStatus, projectRepository.status.FUNDING);
       await assertWalletBalance(wallet, amount);
+    }
+
+    async function sendErrorNotifications(sponsorId) {
+      await notificationService.pushNotification(
+        sponsorId,
+        `Your funds could not be transferred :(`,
+        `Make sure you have necessary funds in your wallet to cost the tx.`,
+        { type: 'funderProjectNotFunded' }
+      );
+    }
+
+    async function sendProjectFundedNotifications(projectId, sponsorId, received) {
+      await notificationService.pushNotification(
+        await walletRepository.getWalletId((await _get(projectId)).ownerAddress),
+        'Your project was funded!',
+        `Your project received ${received} ETHs. Tap for more info.`,
+        { type: 'entrepeneurProjectFunded' }
+      );
+
+      await notificationService.pushNotification(
+        sponsorId,
+        `${received} ETHs successfully transferred!`,
+        `You successfully transferred ${received} ETHs to the project. Tap for more info.`,
+        { type: 'funderProjectFunded' }
+      );
+    }
+
+    async function sendProjectStartedNotifications(projectId) {
+      const { ownerAddress, reviewerAddress } = await _get(projectId);
+
+      await notificationService.pushNotification(
+        await walletRepository.getWalletId(ownerAddress),
+        'Your project has started!',
+        `Your project is totally funded and is now in progress. Tap for more info.`,
+        { type: 'entrepeneurProjectStarted' }
+      );
+
+      await notificationService.pushNotification(
+        await walletRepository.getWalletId(reviewerAddress),
+        'A project you review has started!',
+        `A project you review is totally funded and is now in progress. Tap for more info.`,
+        { type: 'reviewerProjectStarted' }
+      );
     }
 
     async function handleEvent(event, txHash) {
@@ -115,13 +211,17 @@ module.exports = function $projectService(config, conversionUtils, errors, logge
           const received = conversionUtils.fromWei(event.args.funds);
 
           await projectRepository.fund(projectId, sponsorId, received, txHash);
+
           logger.info(`Project funded in tx ${txHash}`);
+          sendProjectFundedNotifications(projectId, sponsorId, received);
         },
         ProjectStarted: async (event, txHash) => {
           assertProjectId(projectId, event.args.projectId.toNumber());
 
           await projectRepository.update(projectId, { currentStatus: projectRepository.status.IN_PROGRESS });
+
           logger.info(`Project funding completed. Project started in tx ${txHash}`);
+          sendProjectStartedNotifications(projectId);
         }
       };
 
@@ -135,19 +235,31 @@ module.exports = function $projectService(config, conversionUtils, errors, logge
     await validateFunding(sponsorWallet, projectId, amount);
 
     const seedyfiuba = await getContract(config, sponsorWallet);
-    const tx = await seedyfiuba.fund(projectId, { value: conversionUtils.toWei(amount), gasLimit: config.gasLimit });
 
-    tx.wait(1).then(async (receipt) => {
-      logger.info('Funding transaction mined');
-      if (!(receipt && receipt.events)) {
-        logger.error(`Project ${projectId} not funded in tx ${tx.hash}`);
-        throw errors.UnknownError;
-      }
+    try {
+      tx = await seedyfiuba.fund(projectId, { value: conversionUtils.toWei(amount), gasLimit: config.gasLimit });
 
-      receipt.events.forEach(async (event) => {
-        await handleEvent(event, tx.hash);
+      tx.wait(1).then(async (receipt) => {
+        logger.info('Funding transaction mined');
+
+        if (!(receipt && receipt.events)) {
+          logger.error(`Project ${projectId} not funded in tx ${tx.hash}`);
+          sendErrorNotifications(sponsorId);
+          throw errors.UnknownError;
+        }
+
+        receipt.events.forEach(async (event) => {
+          await handleEvent(event, tx.hash);
+        });
       });
-    });
+    } catch (err) {
+      sendErrorNotifications(sponsorId);
+      logger.error(err.message);
+      throw errors.create(
+        400,
+        `You were not able to initialize transaction. Check your wallet funds. Details: ${err.message}`
+      );
+    }
 
     return tx.hash;
   }
@@ -186,6 +298,7 @@ module.exports = function $projectService(config, conversionUtils, errors, logge
   }
 
   async function setCompletedStage(txHash, reviewerWallet, completedStage) {
+    let tx;
     const projectId = (await get(txHash)).projectId;
 
     async function validateStageCompletion(projectId, reviewerWallet, completedStage) {
@@ -195,19 +308,73 @@ module.exports = function $projectService(config, conversionUtils, errors, logge
       await assertProjectReviewer(project.reviewerAddress, reviewerWallet.address);
     }
 
+    async function sendErrorNotifications(projectId) {
+      logger.error(`Project ${projectId} didn't complete stage`);
+
+      const { reviewerAddress } = await _get(projectId);
+
+      await notificationService.pushNotification(
+        await walletRepository.getWalletId(reviewerAddress),
+        `Stage ${completedStage} could not be set as completed :(`,
+        `Make sure you have necessary funds in your wallet to cost the tx.`,
+        { type: 'reviewerProjectStageNotCompleted' }
+      );
+    }
+
+    async function sendStageCompletedNotifications(projectId) {
+      const { ownerAddress, reviewerAddress } = await _get(projectId);
+
+      await notificationService.pushNotification(
+        await walletRepository.getWalletId(ownerAddress),
+        `Your project has completed stage ${completedStage}!`,
+        `Funds for next stage are available in your wallet. Tap for more info.`,
+        { type: 'entrepeneurProjectStageCompleted' }
+      );
+
+      await notificationService.pushNotification(
+        await walletRepository.getWalletId(reviewerAddress),
+        `Stage ${completedStage} set as completed successfully!`,
+        `Funds for next stage released to entrepeneur. Tap for more info.`,
+        { type: 'reviewerProjectStageCompleted' }
+      );
+    }
+
+    async function sendProjectCompletedNotifications(projectId) {
+      const { ownerAddress, reviewerAddress } = await _get(projectId);
+
+      await notificationService.pushNotification(
+        await walletRepository.getWalletId(ownerAddress),
+        `Your project is done!`,
+        `Tap for more info.`,
+        { type: 'entrepeneurProjectCompleted' }
+      );
+
+      await notificationService.pushNotification(
+        await walletRepository.getWalletId(reviewerAddress),
+        `A project you review is done!`,
+        `Tap for more info.`,
+        { type: 'reviewerProjectCompleted' }
+      );
+    }
+
     async function handleEvent(event, projectId) {
       const handlers = {
         StageCompleted: async (event) => {
-          logger.info(`Stage ${completedStage} of project ${projectId} completed!`);
           const projectId = event.args.projectId.toNumber();
           const completedStage = event.args.stageCompleted.toNumber();
 
+          logger.info(`Stage ${completedStage} of project ${projectId} completed!`);
+
           projectRepository.update(projectId, { currentStage: completedStage + 1 });
+          sendStageCompletedNotifications(projectId);
         },
         ProjectCompleted: async (event) => {
           const projectId = event.args.projectId.toNumber();
+
           logger.info(`Project ${projectId} completed!`);
+
           projectRepository.update(projectId, { currentStatus: projectRepository.status.COMPLETED });
+          sendProjectCompletedNotifications(projectId);
         }
       };
 
@@ -217,19 +384,30 @@ module.exports = function $projectService(config, conversionUtils, errors, logge
     await validateStageCompletion(projectId, reviewerWallet, completedStage);
 
     const seedyfiuba = await getContract(config, reviewerWallet);
-    const tx = await seedyfiuba.setCompletedStage(projectId, completedStage, { gasLimit: config.gasLimit });
 
-    tx.wait(1).then((receipt) => {
-      logger.info('SetCompletedStage transaction mined.');
-      if (!(receipt && receipt.events)) {
-        logger.error(`Project ${projectId} didn't complete stage in tx ${tx.hash}`);
-        throw errors.UnknownError;
-      }
+    try {
+      tx = await seedyfiuba.setCompletedStage(projectId, completedStage, { gasLimit: config.gasLimit });
 
-      receipt.events.forEach(async (event) => {
-        await handleEvent(event, projectId);
+      tx.wait(1).then(async (receipt) => {
+        logger.info('SetCompletedStage transaction mined.');
+
+        if (!(receipt && receipt.events)) {
+          sendErrorNotifications(projectId);
+          throw errors.UnknownError;
+        }
+
+        receipt.events.forEach(async (event) => {
+          await handleEvent(event, projectId);
+        });
       });
-    });
+    } catch (err) {
+      sendErrorNotifications(projectId);
+      logger.error(err.message);
+      throw errors.create(
+        400,
+        `You were not able to initialize transaction. Check your wallet funds. Details: ${err.message}`
+      );
+    }
 
     return tx.hash;
   }

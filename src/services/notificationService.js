@@ -2,6 +2,7 @@ const { Expo } = require('expo-server-sdk');
 
 module.exports = function $notificationService(errors, logger, notificationRepository, sendNotifications) {
   return {
+    pushNotification,
     pushToken,
     removeToken
   };
@@ -29,5 +30,25 @@ module.exports = function $notificationService(errors, logger, notificationRepos
     logger.info(`Removing ExpoToken for wallet ${walletId}`);
 
     return notificationRepository.remove(walletId, token);
+  }
+
+  async function pushNotification(walletId, title, body, data) {
+    if (!walletId) return;
+    const toUserTokens = await notificationRepository.get(walletId);
+    const notifications = [];
+
+    logger.info(`Sending notification: '${title}' '${body}' to wallet id ${walletId}`);
+
+    toUserTokens.forEach((token) =>
+      notifications.push({
+        to: token,
+        sound: 'default',
+        title,
+        body,
+        data
+      })
+    );
+
+    return sendNotifications(notifications);
   }
 };
