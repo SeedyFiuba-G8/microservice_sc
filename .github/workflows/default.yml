@@ -80,7 +80,7 @@ jobs:
     env:
       HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
       HEROKU_EMAIL: ${{ secrets.HEROKU_MAIL }}
-    needs: [run_eslint] # Add run_tests in a future
+    needs: [run_eslint, run_tests]
     steps:
       - uses: actions/checkout@master
 
