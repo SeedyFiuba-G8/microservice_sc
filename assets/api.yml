@@ -1,0 +1,723 @@
+openapi: '3.0.0'
+
+# =============================================================================
+
+info:
+  title: 'Smart Contract Microservice'
+  description: >
+    Part of the **Seedy FIUBA Project** ([view it on GitHub](https://github.com/orgs/SeedyFiuba-G8/)).
+  version: '1.0.0'
+
+# =============================================================================
+
+servers:
+  - url: https://sf-tdp2-sc.herokuapp.com/
+    description: 'Production'
+  - url: https://sf-tdp2-sc-dev.herokuapp.com/
+    description: 'Staging'
+  - url: http://localhost:3000/
+    description: 'Local development'
+
+# =============================================================================
+
+tags:
+  - name: Projects
+  - name: Wallets
+
+# =============================================================================
+
+security:
+  - ApiKeyAuth: []
+
+# =============================================================================
+
+paths:
+  # PROJECTS
+  /projects:
+    get:
+      summary: Get all projects
+      description: Allows a user to get all projects.
+      tags:
+        - Projects
+      responses:
+        200:
+          $ref: '#/components/responses/getAllProjects'
+        default:
+          $ref: '#/components/responses/Error'
+    post:
+      summary: Create a new project
+      description: Allows a user to create a new project.
+      tags:
+        - Projects
+      requestBody:
+        $ref: '#/components/requestBodies/postProject'
+      responses:
+        200:
+          $ref: '#/components/responses/postProject'
+        default:
+          $ref: '#/components/responses/Error'
+
+  /projects/{projectId}:
+    get:
+      summary: Get a project by id.
+      description: Allows a user to retrieve a project's information by its id.
+      tags:
+        - Projects
+      parameters:
+        - in: path
+          name: projectId
+          schema:
+            $ref: '#/components/schemas/TxHash'
+          required: true
+          description: id of the project to retrieve
+      responses:
+        200:
+          $ref: '#/components/responses/getProject'
+        default:
+          $ref: '#/components/responses/Error'
+    patch:
+      summary: Advance a project stage.
+      description: Allows a reviewer to advance a project stage.
+      tags:
+        - Projects
+      parameters:
+        - in: path
+          name: projectId
+          schema:
+            $ref: '#/components/schemas/TxHash' # TMP
+          required: true
+          description: id of the project to retrieve
+      requestBody:
+        $ref: '#/components/requestBodies/patchProject'
+      responses:
+        200:
+          $ref: '#/components/responses/patchProject'
+        default:
+          $ref: '#/components/responses/Error'
+
+  /projects/{projectId}/funds:
+    post:
+      summary: Fund a project.
+      description: Allows a payment from a wallet to fund a project.
+      tags:
+        - Projects
+      parameters:
+        - in: path
+          name: projectId
+          schema:
+            $ref: '#/components/schemas/TxHash' # TMP
+          required: true
+          description: id of the project to retrieve
+      requestBody:
+        $ref: '#/components/requestBodies/postFunds'
+      responses:
+        200:
+          $ref: '#/components/responses/postFunds'
+        default:
+          $ref: '#/components/responses/Error'
+
+  # WALLETS
+  /wallets:
+    get:
+      summary: Get all registered wallets
+      description: Allows a user to get all registered wallets
+      tags:
+        - Wallets
+      responses:
+        200:
+          $ref: '#/components/responses/getAllWallets'
+        default:
+          $ref: '#/components/responses/Error'
+    post:
+      summary: Create a new wallet
+      description: Allows a user to create a new wallet.
+      tags:
+        - Wallets
+      responses:
+        201:
+          $ref: '#/components/responses/postWallet'
+        default:
+          $ref: '#/components/responses/Error'
+
+  /wallets/{walletId}:
+    get:
+      summary: Get a wallet by its id.
+      description: Allows a user to retrieve a wallet's information by its id.
+      tags:
+        - Wallets
+      parameters:
+        - in: path
+          name: walletId
+          schema:
+            $ref: '#/components/schemas/WalletId'
+          required: true
+          description: id of the wallet we want to retrieve
+      responses:
+        200:
+          $ref: '#/components/responses/getWallet'
+        default:
+          $ref: '#/components/responses/Error'
+
+  /wallets/{walletAddress}/funds:
+    post:
+      summary: Transfer funds to an external wallet
+      description: Allows a user to transfer funds to walletAddress.
+      tags:
+        - Wallets
+      parameters:
+        - in: path
+          name: walletAddress
+          schema:
+            $ref: '#/components/schemas/Address'
+          required: true
+          description: address of the wallet we want to transfer funds
+      requestBody:
+        $ref: '#/components/requestBodies/transferFunds'
+      responses:
+        200:
+          $ref: '#/components/responses/transferFunds'
+        default:
+          $ref: '#/components/responses/Error'
+
+  /wallets/{walletId}/fundings:
+    get:
+      summary: Get the project fundings made by a wallet.
+      description: Allows a user to retrieve a wallet's project funding information by its id.
+      tags:
+        - Wallets
+      parameters:
+        - in: path
+          name: walletId
+          schema:
+            $ref: '#/components/schemas/WalletId'
+          required: true
+          description: id of the wallet whose project fundings we want to retrieve
+      responses:
+        200:
+          $ref: '#/components/responses/getWalletFundings'
+        default:
+          $ref: '#/components/responses/Error'
+
+  /wallets/fundings:
+    get:
+      summary: Get the project fundings made by a wallet.
+      description: Allows a user to retrieve all project funding information.
+      tags:
+        - Wallets
+      responses:
+        200:
+          $ref: '#/components/responses/getAllFundings'
+        default:
+          $ref: '#/components/responses/Error'
+
+  /wallets/{walletId}/pushToken:
+    post:
+      summary: Post a user's expo push notification token
+      description: Allows a user to post a user's expo push notification token.
+      tags:
+        - Notifications
+      parameters:
+        - in: path
+          name: walletId
+          schema:
+            $ref: '#/components/schemas/WalletId'
+          required: true
+          description: id of the wallet whose token we want to post
+      requestBody:
+        $ref: '#/components/requestBodies/pushTokenData'
+      responses:
+        200:
+          $ref: '#/components/responses/pushToken'
+        default:
+          $ref: '#/components/responses/Error'
+
+    delete:
+      summary: Remove a user's token
+      description: Allows a user to remove its push notifications token
+      tags:
+        - Notifications
+      parameters:
+        - in: path
+          name: walletId
+          schema:
+            $ref: '#/components/schemas/WalletId'
+          required: true
+          description: id of the user whose token we want to remove
+        - in: header
+          name: expo-token
+          schema:
+            $ref: '#/components/schemas/ExpoToken'
+          description: push expoToken of the user
+      responses:
+        200:
+          description: 'Token removed successfully.'
+        default:
+          $ref: '#/components/responses/Error'
+
+  # STATUS
+  /info:
+    get:
+      tags:
+        - Status
+      responses:
+        200:
+          $ref: '#/components/responses/info'
+        default:
+          $ref: '#/components/responses/Error'
+
+  /health:
+    get:
+      tags:
+        - Status
+      responses:
+        200:
+          $ref: '#/components/responses/health'
+        default:
+          $ref: '#/components/responses/Error'
+
+  /ping:
+    get:
+      tags:
+        - Status
+      responses:
+        200:
+          $ref: '#/components/responses/ping'
+        default:
+          $ref: '#/components/responses/Error'
+
+# =============================================================================
+
+components:
+  # ---------------------------------------------------------------------------
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: x-api-key
+
+  # ---------------------------------------------------------------------------
+  requestBodies:
+    postProject:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/PostProjectData'
+
+    patchProject:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/PatchProjectData'
+
+    postFunds:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/PostFundsData'
+
+    pushTokenData:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/PushTokenData'
+
+    transferFunds:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/PostFundsData'
+  # ---------------------------------------------------------------------------
+  responses:
+    # ERRORS
+    Error:
+      description: >
+        An error has occured. Check response body for more
+        information about what happened.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+    # PROJECTS
+    getProjects:
+      description: Projects info retrieved successfully.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Projects'
+
+    getProject:
+      description: Project info retrieved successfully.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Project'
+
+    getAllProjects:
+      description: Project info retrieved successfully.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Projects'
+
+    patchProject:
+      description: Project stage advanced successfully.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/TxHash'
+
+    postProject:
+      description: Project creation transaction initiated successfully.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/TxHash'
+
+    postFunds:
+      description: Project funding transaction successful.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/TxHash'
+
+    # WALLETS
+    getWallet:
+      description: Wallet retrieved successfully.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Wallet'
+
+    getAllWallets:
+      description: Wallets retrieved successfully.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Wallets'
+
+    getWalletFundings:
+      description: Wallet fundings retrieved successfully
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Fundings'
+
+    getAllFundings:
+      description: Fundings retrieved successfully
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Fundings'
+
+    postWallet:
+      description: Wallet created successfully.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/PostWallet'
+
+    pushToken:
+      description: Token registered successfully.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/WalletId'
+
+    transferFunds:
+      description: Funds transfering transaction initialized.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/TxHash'
+
+    # STATUS
+    info:
+      description: Microservice general info reported.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Info'
+
+    health:
+      description: Microservice general health state reported.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Health'
+
+    ping:
+      description: Server is active.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Ping'
+
+  # ---------------------------------------------------------------------------
+  schemas:
+    # GENERAL
+    Error:
+      type: object
+      properties:
+        status:
+          type: integer
+        name:
+          type: string
+        message:
+          type: string
+        errors:
+          type: array
+          items:
+            type: object
+      required:
+        - status
+        - name
+
+    # TYPES
+
+    Date:
+      type: string
+      format: date-time
+      example: '2021-06-13T21:29:29.330Z'
+
+    ExpoToken:
+      type: string
+      example: 'ExponentPushToken[AbCdEfGHO1YJKlm_NStuvw]'
+
+    Id:
+      type: integer
+      example: 12
+
+    Hash:
+      type: string
+      example: '0x30b003c570eccaf1705acd4621f72993acb51715f8decbf61535f21376cfe1d2'
+
+    WalletId:
+      type: string
+      format: uuid
+      example: '123e4567-e89b-12d3-a456-426614174000'
+
+    Address:
+      type: string
+      example: '0xf018Be4Fe4fBD4cA1B1162A44bB139a343C2087b'
+
+    Key:
+      type: string
+      example: '0xb9444636faac0ab28ac177c767fa434d7c0767d1b3019d980e079a4d644727ba'
+
+    Stage:
+      type: integer
+
+    Status:
+      type: string
+      example: 'FUNDING'
+
+    TxHash:
+      type: string
+      example: '0x30b003c570eccaf1705acd4621f72993acb51715f8decbf61535f21376cfe1d2'
+
+    StagesCost:
+      type: array
+      items:
+        $ref: '#/components/schemas/ETHAmount'
+      minItems: 1
+
+    ETHAmount:
+      type: number
+      example: 0.000001
+
+    # PROJECTS
+    Project:
+      type: object
+      properties:
+        txHash:
+          $ref: '#/components/schemas/TxHash'
+        id:
+          $ref: '#/components/schemas/Id'
+        ownerAddress:
+          $ref: '#/components/schemas/Address'
+        reviewerAddress:
+          $ref: '#/components/schemas/Address'
+        currentStatus:
+          $ref: '#/components/schemas/Status'
+        currentStage:
+          $ref: '#/components/schemas/Stage'
+        totalStages:
+          $ref: '#/components/schemas/Stage'
+        totalFunded:
+          $ref: '#/components/schemas/ETHAmount'
+        stagesCost:
+          $ref: '#/components/schemas/StagesCost'
+        contributors:
+          type: integer
+          example: 2
+          description: Number of distinct users that contributed to the project.
+        contributions:
+          type: integer
+          example: 5
+          description: Number of contributions made to the project.
+
+      required:
+        - txHash
+        - projectId
+        - ownerAddress
+        - reviewerAddress
+        - currentStatus
+        - currentStage
+        - totalStages
+        - totalFunded
+        - stagesCost
+        - contributors
+        - contributions
+
+    Projects:
+      type: array
+      items:
+        $ref: '#/components/schemas/Project'
+
+    PostProjectData:
+      type: object
+      properties:
+        ownerId:
+          $ref: '#/components/schemas/WalletId'
+        reviewerId:
+          $ref: '#/components/schemas/WalletId'
+        stagesCost:
+          $ref: '#/components/schemas/StagesCost'
+      required:
+        - ownerId
+        - reviewerId
+        - stagesCost
+
+    PatchProjectData:
+      type: object
+      properties:
+        reviewerId:
+          $ref: '#/components/schemas/WalletId'
+        completedStage:
+          $ref: '#/components/schemas/Stage'
+      required:
+        - reviewerId
+        - completedStage
+
+    PostWallet:
+      type: object
+      properties:
+        address:
+          $ref: '#/components/schemas/Address'
+        walletId:
+          $ref: '#/components/schemas/WalletId'
+
+    # WALLETS
+    Funding:
+      type: object
+      properties:
+        walletId:
+          $ref: '#/components/schemas/WalletId'
+        txHash:
+          $ref: '#/components/schemas/TxHash'
+        projectId:
+          $ref: '#/components/schemas/TxHash'
+        amount:
+          $ref: '#/components/schemas/ETHAmount'
+        date:
+          $ref: '#/components/schemas/Date'
+      required:
+        - walletId
+        - txHash
+        - projectId
+        - amount
+        - date
+
+    Fundings:
+      type: array
+      items:
+        $ref: '#/components/schemas/Funding'
+
+    Wallet:
+      type: object
+      properties:
+        address:
+          $ref: '#/components/schemas/Address'
+        walletId:
+          $ref: '#/components/schemas/WalletId'
+        balance:
+          $ref: '#/components/schemas/ETHAmount'
+      required:
+        - address
+        - walletId
+        - balance
+
+    Wallets:
+      type: array
+      items:
+        $ref: '#/components/schemas/Wallet'
+
+    Transaction:
+      type: object
+      properties:
+        chainId:
+          $ref: '#/components/schemas/Id'
+        data:
+          type: string
+          example: '0xd86233940000000000000000000000000000000000000000000000000000000000000060000000000000000000000000f018be4fe4fbd4ca1b1162a44bb139a343c2087b00000000000000000000000019544c4b8ce1c08c81bb67c4075265d967935dcd00000000000000000000000000000000000000000000000000000000000000030000000000000000000000000000000000000000000000008ac7230489e80000000000000000000000000000000000000000000000000001158e460913d000000000000000000000000000000000000000000000000000008ac7230489e80000'
+        from:
+          $ref: '#/components/schemas/Address'
+
+    PushTokenData:
+      type: object
+      properties:
+        token:
+          $ref: '#/components/schemas/ExpoToken'
+      required:
+        - token
+
+    # FUNDING
+    PostFundsData:
+      type: object
+      properties:
+        walletId:
+          $ref: '#/components/schemas/WalletId'
+        amount:
+          $ref: '#/components/schemas/ETHAmount'
+      required:
+        - walletId
+        - amount
+
+    # STATUS
+    Info:
+      type: object
+      properties:
+        creationDate:
+          $ref: '#/components/schemas/Date'
+        description:
+          type: string
+          example: 'Service description!'
+      required:
+        - creationDate
+        - description
+
+    Ping:
+      type: object
+      properties:
+        status:
+          type: string
+          example: 'ok'
+      required:
+        - status
+
+    Health:
+      type: object
+      properties:
+        database:
+          type: string
+          example: 'UP'
+      required:
+        - database
+#
+# =============================================================================

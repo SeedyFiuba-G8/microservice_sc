@@ -1,0 +1,103 @@
+name: CI
+
+on: [push, pull_request]
+
+jobs:
+  run_eslint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@master
+
+      - name: Use Node.js
+        uses: actions/setup-node@v1
+        with:
+          node-version: '14.x'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run ESLint
+        run: npm run lint
+
+  run_tests:
+    runs-on: ubuntu-latest
+    needs: [run_eslint]
+    env:
+      CODECOV_TOKEN: ${{secrets.CODECOV_TOKEN}}
+    steps:
+      - uses: actions/checkout@master
+
+      - name: Use Node.js
+        uses: actions/setup-node@v1
+        with:
+          node-version: '14.x'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests
+        run: npm run test
+
+  #     # Runs only when push/pr to main or dev
+  #     - uses: codecov/codecov-action@v1
+  #       if: ${{ (github.ref == 'refs/heads/main') || (github.ref == 'refs/heads/dev') }}
+  #       with:
+  #         token: ${{ secrets.CODECOV_TOKEN }}
+
+  # Runs only when push/pr to main
+  deploy_prod:
+    if: ${{ github.ref == 'refs/heads/main' }}
+    runs-on: ubuntu-latest
+    env:
+      HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
+      HEROKU_EMAIL: ${{ secrets.HEROKU_MAIL }}
+    needs: [run_eslint, run_tests]
+    steps:
+      - uses: actions/checkout@master
+
+      - name: Build container
+        run: docker build -t sc_microservice .
+
+      - name: Log in to Heroku Container Registry
+        run: heroku container:login
+
+      - name: Tag container
+        run: docker tag core_microservice registry.heroku.com/sf-tdp2-sc/web
+
+      - name: Push container
+        run: docker push registry.heroku.com/sf-tdp2-sc/web
+
+      - name: Release container
+        run: heroku container:release web --app sf-tdp2-sc
+
+      - name: Set NODE_ENV to production
+        run: heroku config:set NODE_ENV=production --app sf-tdp2-sc
+
+  # Runs only when push/pr to dev
+  deploy_dev:
+    if: ${{ github.ref == 'refs/heads/dev' }}
+    runs-on: ubuntu-latest
+    env:
+      HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
+      HEROKU_EMAIL: ${{ secrets.HEROKU_MAIL }}
+    needs: [run_eslint, run_tests]
+    steps:
+      - uses: actions/checkout@master
+
+      - name: Build container
+        run: docker build -t sc_microservice .
+
+      - name: Log in to Heroku Container Registry
+        run: heroku container:login
+
+      - name: Tag container
+        run: docker tag sc_microservice registry.heroku.com/sf-tdp2-sc-dev/web
+
+      - name: Push container
+        run: docker push registry.heroku.com/sf-tdp2-sc-dev/web
+
+      - name: Release container
+        run: heroku container:release web --app sf-tdp2-sc-dev
+
+      - name: Set NODE_ENV to stage
+        run: heroku config:set NODE_ENV=stage --app sf-tdp2-sc-dev
