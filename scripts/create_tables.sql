@@ -1,5 +1,6 @@
 -- Drop existing tables
 
+DROP TABLE IF EXISTS public.notification_tokens;
 DROP TABLE IF EXISTS public.records;
 DROP TABLE IF EXISTS public.stages_cost;
 DROP TABLE IF EXISTS public.projects;
