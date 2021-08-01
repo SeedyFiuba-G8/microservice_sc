@@ -1,15 +1,15 @@
-import chai from "chai";
-import { waffle } from "hardhat";
-import { fixtureProjectCreatedBuilder } from "./common-fixtures";
-import { BigNumberish, ContractTransaction } from "ethers";
-import { Seedifyuba } from "../typechain";
-import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/dist/src/signer-with-address";
+import chai from 'chai';
+import { waffle } from 'hardhat';
+import { fixtureProjectCreatedBuilder } from './common-fixtures';
+import { BigNumberish, ContractTransaction } from 'ethers';
+import { Seedifyuba } from '../../typechain';
+import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/dist/src/signer-with-address';
 
 const { loadFixture } = waffle;
 
 const { expect } = chai;
 
-describe("Seedifyuba - Complex funding", () => {
+describe('Seedifyuba - Complex funding', () => {
   describe(`GIVEN a project was created with three stages`, () => {
     const stagesCost = [10, 20, 30];
     const summedCost = stagesCost.reduce((acc, curr) => acc + curr);
@@ -24,7 +24,7 @@ describe("Seedifyuba - Complex funding", () => {
         seedifyubaFunder = seedifyuba.connect(aFunder);
         await seedifyubaFunder.fund(projectId, { value: amountToFund });
       });
-      it("THEN the missing amount is exactly 1 ether", async function () {
+      it('THEN the missing amount is exactly 1 ether', async function () {
         return expect((await seedifyubaFunder.projects(projectId)).missingAmount).to.equal(1);
       });
 
@@ -39,7 +39,7 @@ describe("Seedifyuba - Complex funding", () => {
       it("THEN the funder's balance decreases in the amount sent", async function () {
         return expect((await seedifyubaFunder.projects(projectId)).missingAmount).to.equal(1);
       });
-      it("THEN the project is still in funding state", async function () {
+      it('THEN the project is still in funding state', async function () {
         return expect((await seedifyubaFunder.projects(projectId)).state).to.equal(0);
       });
     });
@@ -57,7 +57,7 @@ describe("Seedifyuba - Complex funding", () => {
       let seedifyuba: Seedifyuba;
       before(async function () {
         ({ seedifyuba, projectId, anotherFunder, projectOwner, aFunder } = await loadFixture(
-          fixtureProjectCreatedBuilder(stagesCost),
+          fixtureProjectCreatedBuilder(stagesCost)
         ));
         const seedifyubaFunder = seedifyuba.connect(aFunder);
         await seedifyubaFunder.projects(projectId);
@@ -77,20 +77,20 @@ describe("Seedifyuba - Complex funding", () => {
         });
         it(`THEN the project funded event is emitted`, async function () {
           return expect(tx)
-            .to.emit(seedifyuba, "ProjectFunded")
+            .to.emit(seedifyuba, 'ProjectFunded')
             .withArgs(projectId, await anotherFunder.getAddress(), 1);
         });
         it(`THEN the project is at the first stage`, async function () {
           return expect((await seedifyuba.projects(projectId)).currentStage).to.equal(0);
         });
         it(`THEN the project started event is emitted`, async function () {
-          return expect(tx).to.emit(seedifyuba, "ProjectStarted").withArgs(projectId);
+          return expect(tx).to.emit(seedifyuba, 'ProjectStarted').withArgs(projectId);
         });
         it(`THEN the smart contract balance decreases the initial stage cost minus the last ether sent`, async function () {
           // Hacky way to be able to use changeEtherBalance
           const seedifyubaAddress = {
             getAddress: () => seedifyuba.address,
-            provider: seedifyuba.provider,
+            provider: seedifyuba.provider
           };
           return expect(tx).to.changeEtherBalance(seedifyubaAddress, -(stagesCost[0] - 1));
         });
