@@ -13,9 +13,11 @@ docs/
 .vscode/
 src/
 config/
+test/app/
 
 # files
 .solcover.js
 coverage.json
 tsconfig.json
 newrelic.js
+jest.config.js
