@@ -1,21 +1,21 @@
-import { ethers, waffle, getNamedAccounts, deployments } from "hardhat";
-import { Wallet, Transaction, BigNumberish, BigNumber } from "ethers";
-import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/dist/src/signer-with-address";
-import { MockProvider } from "ethereum-waffle";
-import { Seedifyuba } from "../typechain";
+import { ethers, waffle, getNamedAccounts, deployments } from 'hardhat';
+import { Wallet, Transaction, BigNumberish, BigNumber } from 'ethers';
+import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/dist/src/signer-with-address';
+import { MockProvider } from 'ethereum-waffle';
+import { Seedifyuba } from '../../typechain';
 const { loadFixture } = waffle;
 
 export async function fixtureDeployedSeedifyuba(): Promise<Seedifyuba> {
   await deployments.fixture();
   const { deployer } = await getNamedAccounts();
-  const seedifyuba = <unknown>await ethers.getContract("Seedifyuba", deployer);
+  const seedifyuba = <unknown>await ethers.getContract('Seedifyuba', deployer);
   return seedifyuba as Seedifyuba;
 }
 
 export function fixtureProjectCreatedBuilder(stagesCost: BigNumberish[]) {
   return async function fixtureProjectCreated(
     _w: Wallet[],
-    _p: MockProvider,
+    _p: MockProvider
   ): Promise<{
     projectCreationTx: Transaction;
     seedifyuba: Seedifyuba;
@@ -40,7 +40,7 @@ export function fixtureProjectCreatedBuilder(stagesCost: BigNumberish[]) {
       aFunder,
       anotherFunder,
       projectId,
-      projectReviewer,
+      projectReviewer
     };
   };
 }
@@ -48,7 +48,7 @@ export function fixtureProjectCreatedBuilder(stagesCost: BigNumberish[]) {
 export function fixtureFundedProjectBuilder(stagesCost: BigNumberish[]) {
   return async function fixtureProjectCreated(
     _w: Wallet[],
-    _p: MockProvider,
+    _p: MockProvider
   ): Promise<{
     seedifyuba: Seedifyuba;
     deployer: SignerWithAddress;
@@ -59,10 +59,10 @@ export function fixtureFundedProjectBuilder(stagesCost: BigNumberish[]) {
   }> {
     const totalCost: BigNumber = stagesCost.reduce(
       (acc: BigNumber, curr) => BigNumber.from(curr).add(acc),
-      BigNumber.from(0),
+      BigNumber.from(0)
     );
     const { seedifyuba, aFunder, deployer, projectOwner, projectReviewer, projectId } = await loadFixture(
-      fixtureProjectCreatedBuilder(stagesCost),
+      fixtureProjectCreatedBuilder(stagesCost)
     );
     const seedifyubaFunder = seedifyuba.connect(aFunder);
     await seedifyubaFunder.fund(projectId, { value: totalCost.toString() });
@@ -72,7 +72,7 @@ export function fixtureFundedProjectBuilder(stagesCost: BigNumberish[]) {
       projectOwner,
       projectReviewer,
       funder: aFunder,
-      projectId,
+      projectId
     };
   };
 }

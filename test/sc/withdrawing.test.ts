@@ -1,20 +1,20 @@
-import chai from "chai";
-import { waffle } from "hardhat";
+import chai from 'chai';
+import { waffle } from 'hardhat';
 import {
   fixtureProjectCreatedBuilder,
   fixtureDeployedSeedifyuba,
-  fixtureFundedProjectBuilder,
-} from "./common-fixtures";
-import { BigNumberish, ContractTransaction, BigNumber } from "ethers";
-import { Seedifyuba } from "../typechain";
-import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/dist/src/signer-with-address";
+  fixtureFundedProjectBuilder
+} from './common-fixtures';
+import { BigNumberish, ContractTransaction, BigNumber } from 'ethers';
+import { Seedifyuba } from '../../typechain';
+import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/dist/src/signer-with-address';
 
 const { loadFixture } = waffle;
 
 const { expect } = chai;
 
 const stagesCost = [10];
-describe("Seedifyuba - Withdrawing funds", () => {
+describe('Seedifyuba - Withdrawing funds', () => {
   describe(`GIVEN a project was created with one stage with a cost of ${stagesCost[0]} and a user`, () => {
     const amountToFund = 3;
     describe(`AND a user funds it with ${amountToFund} ethers`, function () {
@@ -41,7 +41,7 @@ describe("Seedifyuba - Withdrawing funds", () => {
         });
         it(`THEN the event is emitted`, async function () {
           return expect(withdrawTx)
-            .to.emit(seedifyuba, "FundsWithdrawn")
+            .to.emit(seedifyuba, 'FundsWithdrawn')
             .withArgs(projectId, await aFunder.getAddress(), amountToFund);
         });
         it(`THEN the balance of the user increases ${amountToFund} ethers`, async function () {
@@ -51,7 +51,7 @@ describe("Seedifyuba - Withdrawing funds", () => {
           // Hacky way to be able to use changeEtherBalance
           const seedifyubaAddress = {
             getAddress: () => seedifyuba.address,
-            provider: seedifyuba.provider,
+            provider: seedifyuba.provider
           };
           return expect(withdrawTx).to.changeEtherBalance(seedifyubaAddress, -amountToFund);
         });
@@ -87,7 +87,7 @@ describe("Seedifyuba - Withdrawing funds", () => {
         });
         it(`THEN the event is emitted`, async function () {
           return expect(withdrawTx)
-            .to.emit(seedifyuba, "FundsWithdrawn")
+            .to.emit(seedifyuba, 'FundsWithdrawn')
             .withArgs(projectId, await aFunder.getAddress(), amountToFund);
         });
         it(`THEN the balance of the user increases ${amountToFund} ethers`, async function () {
@@ -97,7 +97,7 @@ describe("Seedifyuba - Withdrawing funds", () => {
           // Hacky way to be able to use changeEtherBalance
           const seedifyubaAddress = {
             getAddress: () => seedifyuba.address,
-            provider: seedifyuba.provider,
+            provider: seedifyuba.provider
           };
           return expect(withdrawTx).to.changeEtherBalance(seedifyubaAddress, -amountToFund);
         });
@@ -135,7 +135,7 @@ describe("Seedifyuba - Withdrawing funds", () => {
         });
         it(`THEN the event is emitted`, async function () {
           return expect(withdrawTx)
-            .to.emit(seedifyuba, "FundsWithdrawn")
+            .to.emit(seedifyuba, 'FundsWithdrawn')
             .withArgs(projectId, await aFunder.getAddress(), amountToWithdraw);
         });
         it(`THEN the balance of the user increases ${amountToFund} ethers`, async function () {
@@ -145,13 +145,13 @@ describe("Seedifyuba - Withdrawing funds", () => {
           // Hacky way to be able to use changeEtherBalance
           const seedifyubaAddress = {
             getAddress: () => seedifyuba.address,
-            provider: seedifyuba.provider,
+            provider: seedifyuba.provider
           };
           return expect(withdrawTx).to.changeEtherBalance(seedifyubaAddress, -amountToWithdraw);
         });
         it(`THEN the funds are rightfully discounted`, async function () {
           return expect(await seedifyuba.fundsSent(projectId, aFunder.address)).to.equal(
-            amountToFund - amountToWithdraw,
+            amountToFund - amountToWithdraw
           );
         });
       });
@@ -170,7 +170,7 @@ describe("Seedifyuba - Withdrawing funds", () => {
         let withdrawTx: Promise<ContractTransaction>;
         before(async function () {
           ({ seedifyuba, aFunder, projectId, anotherFunder } = await loadFixture(
-            fixtureProjectCreatedBuilder(stagesCost),
+            fixtureProjectCreatedBuilder(stagesCost)
           ));
           const seedifyubaFunder = seedifyuba.connect(aFunder);
 
@@ -179,59 +179,59 @@ describe("Seedifyuba - Withdrawing funds", () => {
           withdrawTx = seedifyubaFunder.withdraw(projectId, amountToWithdraw);
         });
         it(`THEN the missing amount increases ${amountToFund} ethers`, async function () {
-          return expect(withdrawTx).to.be.revertedWith("not enough funds");
+          return expect(withdrawTx).to.be.revertedWith('not enough funds');
         });
       });
     });
   });
-  describe("GIVEN a Seedifyuba is deployed", () => {
+  describe('GIVEN a Seedifyuba is deployed', () => {
     describe(`WHEN a user that wants to withdraw(partially) funds from project that does not exist`, function () {
-      it("THEN the tx reverts", async function () {
+      it('THEN the tx reverts', async function () {
         const seedifyuba = await loadFixture(fixtureDeployedSeedifyuba);
-        return expect(seedifyuba.withdraw(9999, 10)).to.be.revertedWith("project not created");
+        return expect(seedifyuba.withdraw(9999, 10)).to.be.revertedWith('project not created');
       });
     });
   });
-  describe("GIVEN a Seedifyuba is deployed", () => {
+  describe('GIVEN a Seedifyuba is deployed', () => {
     describe(`WHEN a user that wants to withdraw(partially) funds from project that is already completely funded`, function () {
-      it("THEN the tx reverts", async function () {
+      it('THEN the tx reverts', async function () {
         const { seedifyuba, projectId } = await loadFixture(fixtureFundedProjectBuilder([10]));
-        return expect(seedifyuba.withdraw(projectId, 10)).to.be.revertedWith("project not in necessary state");
+        return expect(seedifyuba.withdraw(projectId, 10)).to.be.revertedWith('project not in necessary state');
       });
     });
   });
-  describe("GIVEN a Seedifyuba is deployed", () => {
+  describe('GIVEN a Seedifyuba is deployed', () => {
     describe(`WHEN a user that wants to withdraw(partially) funds from project that is already completed`, function () {
-      it("THEN the tx reverts", async function () {
+      it('THEN the tx reverts', async function () {
         const { seedifyuba, projectReviewer, projectId } = await loadFixture(fixtureFundedProjectBuilder([10]));
         await seedifyuba.connect(projectReviewer).setCompletedStage(projectId, 0);
-        return expect(seedifyuba.withdraw(projectId, 10)).to.be.revertedWith("project not in necessary state");
+        return expect(seedifyuba.withdraw(projectId, 10)).to.be.revertedWith('project not in necessary state');
       });
     });
   });
 
-  describe("GIVEN a Seedifyuba is deployed", () => {
+  describe('GIVEN a Seedifyuba is deployed', () => {
     describe(`WHEN a user that wants to withdraw(completely) funds from project that does not exist`, function () {
-      it("THEN the tx reverts", async function () {
+      it('THEN the tx reverts', async function () {
         const seedifyuba = await loadFixture(fixtureDeployedSeedifyuba);
-        return expect(seedifyuba.withdrawAllFunds(9999)).to.be.revertedWith("project not created");
+        return expect(seedifyuba.withdrawAllFunds(9999)).to.be.revertedWith('project not created');
       });
     });
   });
-  describe("GIVEN a Seedifyuba is deployed", () => {
+  describe('GIVEN a Seedifyuba is deployed', () => {
     describe(`WHEN a user that wants to withdraw(completely) funds from project that is already completely funded`, function () {
-      it("THEN the tx reverts", async function () {
+      it('THEN the tx reverts', async function () {
         const { seedifyuba, projectId } = await loadFixture(fixtureFundedProjectBuilder([10]));
-        return expect(seedifyuba.withdrawAllFunds(projectId)).to.be.revertedWith("project not in necessary state");
+        return expect(seedifyuba.withdrawAllFunds(projectId)).to.be.revertedWith('project not in necessary state');
       });
     });
   });
-  describe("GIVEN a Seedifyuba is deployed", () => {
+  describe('GIVEN a Seedifyuba is deployed', () => {
     describe(`WHEN a user that wants to withdraw(completely) funds from project that is already completed`, function () {
-      it("THEN the tx reverts", async function () {
+      it('THEN the tx reverts', async function () {
         const { seedifyuba, projectReviewer, projectId } = await loadFixture(fixtureFundedProjectBuilder([10]));
         await seedifyuba.connect(projectReviewer).setCompletedStage(projectId, 0);
-        return expect(seedifyuba.withdrawAllFunds(projectId)).to.be.revertedWith("project not in necessary state");
+        return expect(seedifyuba.withdrawAllFunds(projectId)).to.be.revertedWith('project not in necessary state');
       });
     });
   });

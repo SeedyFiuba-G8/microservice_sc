@@ -1,9 +1,9 @@
-import chai from "chai";
-import { waffle } from "hardhat";
-import { fixtureFundedProjectBuilder } from "./common-fixtures";
-import { ContractTransaction, BigNumberish } from "ethers";
-import { Seedifyuba } from "../typechain";
-import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/dist/src/signer-with-address";
+import chai from 'chai';
+import { waffle } from 'hardhat';
+import { fixtureFundedProjectBuilder } from './common-fixtures';
+import { ContractTransaction, BigNumberish } from 'ethers';
+import { Seedifyuba } from '../../typechain';
+import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/dist/src/signer-with-address';
 
 const { loadFixture } = waffle;
 
@@ -20,15 +20,15 @@ describe(`Seedifyuba - Reviews`, function () {
       let tx: ContractTransaction;
       before(async function () {
         ({ seedifyuba, projectId, projectReviewer, projectOwner } = await loadFixture(
-          fixtureFundedProjectBuilder(stagesCost),
+          fixtureFundedProjectBuilder(stagesCost)
         ));
         tx = await seedifyuba.connect(projectReviewer).setCompletedStage(projectId, 0);
       });
       it(`THEN an event that the project stage was completed is emitted`, async function () {
-        return expect(tx).to.emit(seedifyuba, "StageCompleted").withArgs(projectId, 0);
+        return expect(tx).to.emit(seedifyuba, 'StageCompleted').withArgs(projectId, 0);
       });
       it(`THEN an event that the project was completed is emitted`, async function () {
-        return expect(tx).to.emit(seedifyuba, "ProjectCompleted").withArgs(projectId);
+        return expect(tx).to.emit(seedifyuba, 'ProjectCompleted').withArgs(projectId);
       });
       it(`THEN the balance of the owner stays the same because there is no other stage`, async function () {
         return expect(tx).to.changeEtherBalance(projectOwner, 0);
@@ -37,7 +37,7 @@ describe(`Seedifyuba - Reviews`, function () {
         // Hacky way to be able to use changeEtherBalance
         const seedifyubaAddress = {
           getAddress: () => seedifyuba.address,
-          provider: seedifyuba.provider,
+          provider: seedifyuba.provider
         };
         return expect(tx).to.changeEtherBalance(seedifyubaAddress, 0);
       });
@@ -56,12 +56,12 @@ describe(`Seedifyuba - Reviews`, function () {
       let tx: ContractTransaction;
       before(async function () {
         ({ seedifyuba, projectId, projectReviewer, projectOwner } = await loadFixture(
-          fixtureFundedProjectBuilder(stagesCost),
+          fixtureFundedProjectBuilder(stagesCost)
         ));
         tx = await seedifyuba.connect(projectReviewer).setCompletedStage(projectId, 0);
       });
       it(`THEN an event that the project stage was completed is emitted`, async function () {
-        return expect(tx).to.emit(seedifyuba, "StageCompleted").withArgs(projectId, 0);
+        return expect(tx).to.emit(seedifyuba, 'StageCompleted').withArgs(projectId, 0);
       });
       it(`THEN the owner receives the second stage's funds`, async function () {
         return expect(tx).to.changeEtherBalance(projectOwner, stagesCost[1]);
@@ -73,7 +73,7 @@ describe(`Seedifyuba - Reviews`, function () {
         // Hacky way to be able to use changeEtherBalance
         const seedifyubaAddress = {
           getAddress: () => seedifyuba.address,
-          provider: seedifyuba.provider,
+          provider: seedifyuba.provider
         };
         return expect(tx).to.changeEtherBalance(seedifyubaAddress, -stagesCost[1]);
       });
@@ -92,16 +92,16 @@ describe(`Seedifyuba - Reviews`, function () {
       let tx: ContractTransaction;
       before(async function () {
         ({ seedifyuba, projectId, projectReviewer, projectOwner } = await loadFixture(
-          fixtureFundedProjectBuilder(stagesCost),
+          fixtureFundedProjectBuilder(stagesCost)
         ));
         await seedifyuba.connect(projectReviewer).setCompletedStage(projectId, 0);
         tx = await seedifyuba.connect(projectReviewer).setCompletedStage(projectId, 1);
       });
       it(`THEN an event that the project stage was completed is emitted`, async function () {
-        return expect(tx).to.emit(seedifyuba, "StageCompleted").withArgs(projectId, 1);
+        return expect(tx).to.emit(seedifyuba, 'StageCompleted').withArgs(projectId, 1);
       });
       it(`THEN an event that the project was completed is emitted`, async function () {
-        return expect(tx).to.emit(seedifyuba, "ProjectCompleted").withArgs(projectId);
+        return expect(tx).to.emit(seedifyuba, 'ProjectCompleted').withArgs(projectId);
       });
       it(`THEN the balance of the owner stays the same because there is no other stage`, async function () {
         return expect(tx).to.changeEtherBalance(projectOwner, 0);
@@ -110,7 +110,7 @@ describe(`Seedifyuba - Reviews`, function () {
         // Hacky way to be able to use changeEtherBalance
         const seedifyubaAddress = {
           getAddress: () => seedifyuba.address,
-          provider: seedifyuba.provider,
+          provider: seedifyuba.provider
         };
         return expect(tx).to.changeEtherBalance(seedifyubaAddress, 0);
       });
@@ -129,12 +129,12 @@ describe(`Seedifyuba - Reviews`, function () {
       let tx: ContractTransaction;
       before(async function () {
         ({ seedifyuba, projectId, projectReviewer, projectOwner } = await loadFixture(
-          fixtureFundedProjectBuilder(stagesCost),
+          fixtureFundedProjectBuilder(stagesCost)
         ));
         tx = await seedifyuba.connect(projectReviewer).setCompletedStage(projectId, 1);
       });
       it(`THEN an event that the project stage was completed is emitted`, async function () {
-        return expect(tx).to.emit(seedifyuba, "StageCompleted").withArgs(projectId, 1);
+        return expect(tx).to.emit(seedifyuba, 'StageCompleted').withArgs(projectId, 1);
       });
       it(`THEN the owner receives the second stage and the third stage's funds`, async function () {
         return expect(tx).to.changeEtherBalance(projectOwner, stagesCost[1] + stagesCost[2]);
@@ -143,7 +143,7 @@ describe(`Seedifyuba - Reviews`, function () {
         // Hacky way to be able to use changeEtherBalance
         const seedifyubaAddress = {
           getAddress: () => seedifyuba.address,
-          provider: seedifyuba.provider,
+          provider: seedifyuba.provider
         };
         return expect(tx).to.changeEtherBalance(seedifyubaAddress, -(stagesCost[1] + stagesCost[2]));
       });
@@ -165,15 +165,15 @@ describe(`Seedifyuba - Reviews`, function () {
       let tx: ContractTransaction;
       before(async function () {
         ({ seedifyuba, projectId, projectReviewer, projectOwner } = await loadFixture(
-          fixtureFundedProjectBuilder(stagesCost),
+          fixtureFundedProjectBuilder(stagesCost)
         ));
         tx = await seedifyuba.connect(projectReviewer).setCompletedStage(projectId, 1);
       });
       it(`THEN an event that the project stage was completed is emitted`, async function () {
-        return expect(tx).to.emit(seedifyuba, "StageCompleted").withArgs(projectId, 1);
+        return expect(tx).to.emit(seedifyuba, 'StageCompleted').withArgs(projectId, 1);
       });
       it(`THEN an event that the project was completed is emitted`, async function () {
-        return expect(tx).to.emit(seedifyuba, "ProjectCompleted").withArgs(projectId);
+        return expect(tx).to.emit(seedifyuba, 'ProjectCompleted').withArgs(projectId);
       });
       it(`THEN the owner receives the second stage funds`, async function () {
         return expect(tx).to.changeEtherBalance(projectOwner, stagesCost[1]);
@@ -182,7 +182,7 @@ describe(`Seedifyuba - Reviews`, function () {
         // Hacky way to be able to use changeEtherBalance
         const seedifyubaAddress = {
           getAddress: () => seedifyuba.address,
-          provider: seedifyuba.provider,
+          provider: seedifyuba.provider
         };
         return expect(tx).to.changeEtherBalance(seedifyubaAddress, -stagesCost[1]);
       });
@@ -196,7 +196,7 @@ describe(`Seedifyuba - Reviews`, function () {
     describe(`WHEN a user, which is not the reviewer, tries to set a stage completed`, function () {
       it(`THEN th tx reverts`, async function () {
         const { seedifyuba, projectId } = await loadFixture(fixtureFundedProjectBuilder(stagesCost));
-        return expect(seedifyuba.setCompletedStage(projectId, 0)).to.be.revertedWith("not project reviewer");
+        return expect(seedifyuba.setCompletedStage(projectId, 0)).to.be.revertedWith('not project reviewer');
       });
     });
   });
@@ -206,7 +206,7 @@ describe(`Seedifyuba - Reviews`, function () {
       it(`THEN th tx reverts`, async function () {
         const { seedifyuba, projectId, projectReviewer } = await loadFixture(fixtureFundedProjectBuilder(stagesCost));
         return expect(seedifyuba.connect(projectReviewer).setCompletedStage(projectId, 1)).to.be.revertedWith(
-          "stage out of bounds",
+          'stage out of bounds'
         );
       });
     });
@@ -218,7 +218,7 @@ describe(`Seedifyuba - Reviews`, function () {
         const { seedifyuba, projectId, projectReviewer } = await loadFixture(fixtureFundedProjectBuilder(stagesCost));
         await seedifyuba.connect(projectReviewer).setCompletedStage(projectId, 0);
         return expect(seedifyuba.connect(projectReviewer).setCompletedStage(projectId, 0)).to.be.revertedWith(
-          "previous stage",
+          'previous stage'
         );
       });
     });
@@ -230,7 +230,7 @@ describe(`Seedifyuba - Reviews`, function () {
         const { seedifyuba, projectId, projectReviewer } = await loadFixture(fixtureFundedProjectBuilder(stagesCost));
         await seedifyuba.connect(projectReviewer).setCompletedStage(projectId, 1);
         return expect(seedifyuba.connect(projectReviewer).setCompletedStage(projectId, 0)).to.be.revertedWith(
-          "previous stage",
+          'previous stage'
         );
       });
     });
@@ -241,7 +241,7 @@ describe(`Seedifyuba - Reviews`, function () {
       it(`THEN th tx reverts`, async function () {
         const { seedifyuba, projectReviewer } = await loadFixture(fixtureFundedProjectBuilder(stagesCost));
         return expect(seedifyuba.connect(projectReviewer).setCompletedStage(99999, 0)).to.be.revertedWith(
-          "project not created",
+          'project not created'
         );
       });
     });
