@@ -34,7 +34,6 @@ module.exports = {
   provider,
   services: {
     apikeys: {
-      enabled: false,
       baseUrl: _.get(
         process.env,
         'APIKEYS_URL',
