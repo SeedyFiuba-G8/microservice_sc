@@ -34,11 +34,8 @@ module.exports = {
   provider,
   services: {
     apikeys: {
-      baseUrl: _.get(
-        process.env,
-        'APIKEYS_URL',
-        'https://sf-tdp2-apikeys-dev.herokuapp.com/'
-      )
+      enabled: false,
+      baseUrl: _.get(process.env, 'APIKEYS_URL', 'https://sf-tdp2-apikeys-dev.herokuapp.com/')
     }
   }
 };
