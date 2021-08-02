@@ -11,7 +11,6 @@ module.exports = {
   monitoring: false,
   services: {
     apikeys: {
-      enabled: false,
       baseUrl: 'http://apikeys-test/'
     }
   }
