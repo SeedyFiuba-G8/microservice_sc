@@ -6,7 +6,7 @@
   "license": "ISC",
   "dependencies": {
     "@seedyfiuba/api_components": "1.0.3",
-    "@seedyfiuba/apikeys_components": "1.0.0",
+    "@seedyfiuba/apikeys_components": "1.0.3",
     "@seedyfiuba/db_components": "1.1.1",
     "@seedyfiuba/error_components": "1.4.0",
     "@seedyfiuba/gateway_components": "1.2.4",
